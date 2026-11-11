@@ -21,7 +21,17 @@ EXIT_SPEC = 2
 EXIT_RENDER = 3
 
 
+def _configure_console() -> None:
+    """Windows 控制台默认不是 UTF-8，中文日志会抛 UnicodeEncodeError。"""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except Exception:
+            pass
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    _configure_console()
     ap = argparse.ArgumentParser(prog="osda-scene",
                                  description="OSDA Scene Spec 渲染器")
     ap.add_argument("--spec", required=True, help="scene JSON")

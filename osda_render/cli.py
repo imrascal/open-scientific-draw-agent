@@ -26,7 +26,17 @@ EXIT_REVIEW = 4
 EXIT_META = 5
 
 
+def _configure_console() -> None:
+    """Windows 控制台默认不是 UTF-8，中文日志会抛 UnicodeEncodeError。"""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="replace")
+        except Exception:
+            pass
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    _configure_console()
     ap = argparse.ArgumentParser(
         prog="osda-render",
         description="OSDA 的 Blender 渲染桥接：.blend / build.py -> PNG -> 可选视觉审核",
