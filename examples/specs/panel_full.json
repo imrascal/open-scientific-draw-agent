@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "name": "panel_full",
+  "backend": "composite",
+  "canvas": { "width_mm": 180, "height_mm": 130 },
+  "journal": { "font_family": "Arial", "min_font_pt": 7, "min_stroke_pt": 0.5, "dpi": 600 },
+  "layout": { "mode": "grid", "cols": 2, "gap_mm": 4, "margin_mm": 5 },
+  "progressive": { "enabled": false },
+  "swarm": { "enabled": false },
+  "output": { "formats": ["pdf", "png"], "dpi": 600, "color_mode": "RGB", "verify_text": true },
+  "elements": [
+    { "id": "a_transfer", "type": "data_plot", "cell": [0, 0], "label": "a",
+      "csv": "../data/transfer.csv", "x": "Vg", "y": "Id", "kind": "line", "log_y": true,
+      "xlabel": "Vg (V)", "ylabel": "Id (A)", "color": "#2867A0", "w_mm": 83 },
+    { "id": "b_output", "type": "data_plot", "cell": [0, 1], "label": "b",
+      "csv": "../data/output.csv", "x": "Vd", "y": "Id", "kind": "line",
+      "xlabel": "Vd (V)", "ylabel": "Id (a.u.)", "color": "#C9A227", "w_mm": 83 },
+    { "id": "c_schematic", "type": "panel", "cell": [1, 0], "label": "c",
+      "src": "../assets/schematic.svg", "w_mm": 83, "h_mm": 58 },
+    { "id": "d_device", "type": "blender_asset", "cell": [1, 1], "label": "d",
+      "asset_dir": "../assets/fet3d", "renderer": "auto",
+      "resolution": [2000, 1380], "samples": 16, "w_mm": 83 }
+  ]
+}

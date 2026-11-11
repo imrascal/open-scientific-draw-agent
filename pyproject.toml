@@ -1,0 +1,20 @@
+[project]
+name = "osda-render"
+version = "0.1.0"
+description = "OSDA 的 Blender 渲染桥接层：.blend/build.py -> PNG -> 可选视觉审核"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "GPL-3.0-or-later" }
+dependencies = []
+
+[project.optional-dependencies]
+server = ["paramiko>=3.0"]
+review = ["requests>=2.28"]
+image = ["Pillow>=10"]
+
+[project.scripts]
+osda-render = "osda_render.cli:main"
+osda-scene = "osda_scene.cli:main"
+
+[tool.setuptools]
+packages = ["osda_render", "osda_vector", "osda_scene"]

@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "name": "asset_3d",
+  "backend": "composite",
+  "canvas": { "width_mm": 80, "height_mm": 60 },
+  "journal": { "font_family": "Arial", "min_font_pt": 7, "min_stroke_pt": 0.5, "dpi": 600 },
+  "layout": { "mode": "free" },
+  "progressive": { "enabled": false },
+  "swarm": { "enabled": false },
+  "output": { "formats": ["pdf", "png"], "dpi": 600, "color_mode": "RGB", "verify_text": true },
+  "elements": [
+    { "id": "device3d", "type": "blender_asset", "asset_dir": "../assets/fet3d",
+      "renderer": "auto", "resolution": [1200, 900], "samples": 16,
+      "x_mm": 5, "y_mm": 2, "w_mm": 70 },
+    { "id": "caption", "type": "text", "x_mm": 5, "y_mm": 57,
+      "content": "3D device rendered by Blender, composited as transparent PNG",
+      "size_pt": 7, "fill": "#555555" }
+  ]
+}

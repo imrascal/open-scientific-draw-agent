@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "name": "panel_grid",
+  "backend": "composite",
+  "canvas": { "width_mm": 180, "height_mm": 130 },
+  "journal": { "font_family": "Arial", "min_font_pt": 7, "min_stroke_pt": 0.5, "dpi": 600 },
+  "layout": { "mode": "grid", "cols": 2, "gap_mm": 6, "margin_mm": 8 },
+  "progressive": { "enabled": false },
+  "swarm": { "enabled": false },
+  "output": { "formats": ["pdf", "png"], "dpi": 600, "color_mode": "RGB", "verify_text": true },
+  "elements": [
+    { "id": "a_transfer", "type": "data_plot", "cell": [0, 0],
+      "csv": "../data/transfer.csv", "x": "Vg", "y": "Id", "kind": "line", "log_y": true,
+      "xlabel": "Vg (V)", "ylabel": "Id (A)", "color": "#2867A0", "w_mm": 78 },
+    { "id": "b_output", "type": "data_plot", "cell": [0, 1],
+      "csv": "../data/output.csv", "x": "Vd", "y": "Id", "kind": "line",
+      "xlabel": "Vd (V)", "ylabel": "Id (a.u.)", "color": "#C9A227", "w_mm": 78 },
+    { "id": "c_caption", "type": "text", "cell": [1, 0],
+      "content": "c  schematic placeholder", "size_pt": 7, "fill": "#555555" },
+    { "id": "d_caption", "type": "text", "cell": [1, 1],
+      "content": "d  third-party panel goes here (SVG/PDF)", "size_pt": 7, "fill": "#555555" }
+  ]
+}

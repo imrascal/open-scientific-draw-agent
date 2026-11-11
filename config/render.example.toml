@@ -1,0 +1,41 @@
+# OSDA 渲染桥接层配置示例
+# 复制到 ~/.config/osda/render.toml 后按需修改。
+# 原则：本文件只放占位符，任何真实地址与密钥都不要提交到仓库。
+
+[server]
+# 默认关闭：没有内网/没有 GPU 的贡献者开箱即可用 local 或 mock
+enabled = false
+host = "render-host.local"        # 占位符，请改成自己的主机
+user = "your-user"
+# 密码不要写在这里。推荐用 SSH key：
+key_file = "~/.ssh/id_ed25519"
+# 也可以改用环境变量 OSDA_SERVER_PASSWORD（优先级高于本文件）
+gpu_idle_max_util = 5.0           # GPU 利用率低于此值才认为空闲
+docker_image = "blender-gpu"      # 建议用本仓库 docker/Dockerfile 自行构建
+remote_work = "/data/blender/work"
+
+[render]
+# 留空则自动探测：OSDA_BLENDER -> PATH -> 常见安装目录
+blender = ""
+samples_server = 128
+samples_local = 32
+device = "optix"                  # optix | cuda | cpu
+local_threads = 0                 # 0 = 交给 Blender 自己决定
+build_timeout_s = 300             # 构建场景超时（旧脚本是 120s，对复杂场景偏紧）
+timeout_server_s = 3600
+timeout_local_s = 900
+frames = "1"
+require_meta = false              # OSDA 主流程调用时应设为 true
+
+[review]
+provider = "none"                 # none | glm | mimo；密钥只从环境变量读
+glm_model = "glm-4.6v"
+mimo_model = "mimo-v2.5"
+max_image_px = 2048
+overall_min = 8.0
+dim_min = 6.0
+dim_floor = 4.0
+auto_retry = true
+# 硬伤关键词，命中即否决。不要加"文字"这种过宽的词。
+veto_keywords = ["裁切", "截断", "空图", "全黑", "全白", "残影", "重复对象",
+                 "浮动平面", "水印", "UI 元素", "意外出现的文字", "穿透", "穿插"]

@@ -1,0 +1,31 @@
+OSDA render bridge — third-party notices
+=========================================
+
+本仓库以 GPL-3.0-or-later 发布（见 LICENSE）。
+
+Blender
+-------
+本项目不随附 Blender。Blender 本体为 GPL（默认 GPL-2.0-or-later，
+发行二进制按 GPL-3.0-or-later），Cycles 渲染引擎为 Apache-2.0。
+`templates/build_3d.py` 使用 Blender Python API，按 blender.org 的说明
+以 GPL 兼容许可发布。
+用户使用 Blender 生成的图片、.blend 等成果归用户所有。
+
+运行时依赖（均为按需导入，不随仓库分发）
+----------------------------------------
+paramiko 5.0.0        LGPL-2.1       服务器模式（SSH/SFTP）
+requests 2.34.2       Apache-2.0     视觉审核调用
+Pillow 12.3.0         MIT-CMU        mock 渲染、alpha 检查、审核缩图
+tomllib               PSF            Python 3.11+ 标准库，配置解析
+jsonschema 4.26.0     MIT            （下游矢量层使用）
+
+外部服务
+--------
+GLM（智谱）与 MiMo（小米）为第三方 API 服务，其使用受各自服务条款约束。
+本仓库不包含任何密钥，也不对服务可用性、计费或内容政策作任何担保。
+
+参考与边界
+----------
+设计思路参考了 LY2260789/scientific-illustrator-agent。该仓库未提供开源
+许可证（README 明示 "No open-source license has been selected yet"），
+因此本项目未使用其任何代码，仅借鉴了不受版权保护的工作流思路。
