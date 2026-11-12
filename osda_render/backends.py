@@ -117,7 +117,20 @@ def _ssh_client(cfg: Config):
     require_server_credentials(cfg)
     s = cfg.server
     client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    # 默认拒绝未知主机，只信任系统 known_hosts（~/.ssh/known_hosts 等）。
+    # 局域网首次部署不方便加 known_hosts 时可以显式设置 OSDA_SSH_ALLOW_UNKNOWN_HOST=1，
+    # 退回到 AutoAddPolicy；不建议在公网环境开。
+    if os.environ.get("OSDA_SSH_ALLOW_UNKNOWN_HOST", "") in ("1", "true", "yes"):
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    else:
+        client.set_missing_host_key_policy(paramiko.RejectPolicy())
+        try:
+            client.load_system_host_keys()
+        except Exception:
+            # 有些容器环境没有 known_hosts，静默忽略让 RejectPolicy 生效即可
+            pass
+
     kwargs = {"hostname": s.host, "username": s.user, "timeout": 15}
     if s.key_file:
         kwargs["key_filename"] = os.path.expanduser(s.key_file)

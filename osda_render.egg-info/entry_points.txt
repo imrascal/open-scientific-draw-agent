@@ -1,0 +1,3 @@
+[console_scripts]
+osda-render = osda_render.cli:main
+osda-scene = osda_scene.cli:main

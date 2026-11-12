@@ -77,9 +77,15 @@ def _coerce(field_type: str, value: Any) -> Any:
             return value
         return str(value).strip().lower() in ("1", "true", "yes", "on")
     if field_type is int:
-        return int(value)
+        try:
+            return int(value)
+        except (TypeError, ValueError) as exc:
+            raise ConfigError(f"整数字段无法解析: {value!r}") from exc
     if field_type is float:
-        return float(value)
+        try:
+            return float(value)
+        except (TypeError, ValueError) as exc:
+            raise ConfigError(f"浮点字段无法解析: {value!r}") from exc
     if field_type is str:
         return str(value)
     return value
@@ -123,7 +129,16 @@ def load_config(path: str | Path | None = None) -> Config:
                 if not isinstance(data[section], dict):
                     raise ConfigError(f"[{section}] 必须是表")
                 _apply_section(obj, data[section], section)
-    _apply_env(cfg)
+    try:
+        _apply_env(cfg)
+    except ConfigError:
+        raise
+    except Exception as exc:
+        raise ConfigError(f"环境变量解析失败: {exc}") from exc
+
+    # 非法 provider 尽早报错，别拖到审核执行时才崩溃
+    if cfg.review.provider not in PROVIDERS:
+        raise ConfigError(f"未知审核引擎: {cfg.review.provider}；可选 {', '.join(PROVIDERS)}")
     return cfg
 
 

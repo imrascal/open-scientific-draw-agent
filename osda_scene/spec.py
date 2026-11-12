@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-SCHEMA_PATH = Path(__file__).resolve().parents[1] / "schema" / "scene.schema.json"
+SCHEMA_PATH = Path(__file__).resolve().parent / "schema" / "scene.schema.json"
 
 DEFAULTS = {
     "backend": "auto",
@@ -39,9 +39,17 @@ def load_spec(path: str | Path) -> dict[str, Any]:
         spec = json.loads(p.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise SpecError(f"spec 不是合法 JSON: {exc}") from exc
-    spec = _merge_defaults(spec)
-    _validate_schema(spec)
-    _validate_semantics(spec, base=p.parent)
+    except OSError as exc:
+        raise SpecError(f"spec 读失败: {exc}") from exc
+    try:
+        spec = _merge_defaults(spec)
+        _validate_schema(spec)
+        _validate_semantics(spec, base=p.parent)
+    except SpecError:
+        raise
+    except Exception as exc:
+        # 收敛 KeyError / AttributeError / TypeError 等结构问题，不让 traceback 漏到 CLI
+        raise SpecError(f"spec 加载异常: {type(exc).__name__}: {exc}") from exc
     return spec
 
 
@@ -50,6 +58,9 @@ def _merge_defaults(spec: dict[str, Any]) -> dict[str, Any]:
         if key not in spec:
             spec[key] = json.loads(json.dumps(value))
         elif isinstance(value, dict):
+            if not isinstance(spec[key], dict):
+                # 类型错误交给 schema / 语义校验处理，这里不要再 AttributeError
+                continue
             for sub, sub_value in value.items():
                 spec[key].setdefault(sub, sub_value)
     return spec
@@ -79,16 +90,24 @@ def _validate_semantics(spec: dict[str, Any], base: Path) -> None:
     height = spec["canvas"]["height_mm"]
     elements = spec["elements"]
 
+    layout = spec.get("layout")
+    if layout is None:
+        spec["layout"] = {"mode": "free"}
+        layout = spec["layout"]
+    if not isinstance(layout, dict):
+        raise SpecError(f"layout 必须是对象，实际是 {type(layout).__name__}")
+    grid = layout.get("mode") == "grid"
+
     ids = [el["id"] for el in elements]
     if len(ids) != len(set(ids)):
         raise SpecError("元素 id 必须唯一")
 
-    order = spec["layout"].get("order") or []
+    layout = spec.get("layout", {}) if isinstance(spec.get("layout"), dict) else {}
+    order = layout.get("order") or []
     unknown = [oid for oid in order if oid not in ids]
     if unknown:
         raise SpecError("layout.order 引用了不存在的元素: " + ", ".join(unknown))
 
-    grid = spec["layout"]["mode"] == "grid"
     for el in elements:
         kind = el["type"]
         if kind in PLACED_TYPES and not grid and ("x_mm" not in el or "y_mm" not in el):
@@ -105,6 +124,9 @@ def _validate_semantics(spec: dict[str, Any], base: Path) -> None:
             if not asset.is_dir():
                 raise SpecError(f"元素 {el['id']} 的 asset_dir 不存在: {asset}")
 
+        # grid 布局下坐标由 apply_layout 生成，这一步还没有，跳过 bbox
+        if grid and "cell" in el and "x_mm" not in el:
+            continue
         bbox = _bbox(el)
         if bbox:
             x, y, w, h = bbox
@@ -113,9 +135,9 @@ def _validate_semantics(spec: dict[str, Any], base: Path) -> None:
 
     # 后端与元素类型必须自洽
     kinds = {el["type"] for el in elements}
-    if spec["backend"] == "inkscape" and ({"data_plot", "blender_asset"} & kinds):
+    if spec.get("backend") == "inkscape" and ({"data_plot", "blender_asset"} & kinds):
         raise SpecError("backend=inkscape 不能包含 data_plot/blender_asset，请用 composite")
-    if spec["backend"] == "blender" and ({"data_plot", "rect", "text"} & kinds):
+    if spec.get("backend") == "blender" and ({"data_plot", "rect", "text"} & kinds):
         raise SpecError("backend=blender 只用于纯 3D 素材，请改用 composite")
 
 
@@ -128,22 +150,40 @@ def _require_file(rel: str, base: Path, element_id: str) -> None:
 def _bbox(el: dict) -> tuple[float, float, float, float] | None:
     kind = el["type"]
     if kind == "rect":
+        if not all(k in el for k in ("x_mm", "y_mm", "w_mm", "h_mm")):
+            return None
         return el["x_mm"], el["y_mm"], el["w_mm"], el["h_mm"]
     if kind == "circle":
+        if not all(k in el for k in ("cx_mm", "cy_mm", "r_mm")):
+            return None
         return (el["cx_mm"] - el["r_mm"], el["cy_mm"] - el["r_mm"],
                 2 * el["r_mm"], 2 * el["r_mm"])
     if kind in ("line", "arrow"):
+        if not all(k in el for k in ("x1_mm", "y1_mm", "x2_mm", "y2_mm")):
+            return None
         x0, y0 = el["x1_mm"], el["y1_mm"]
         x1, y1 = el["x2_mm"], el["y2_mm"]
         return min(x0, x1), min(y0, y1), abs(x1 - x0), abs(y1 - y0)
     if kind == "image":
-        return el.get("x_mm", 0), el.get("y_mm", 0), el["w_mm"], el.get("h_mm", 0)
+        x = el.get("x_mm"); y = el.get("y_mm"); w = el.get("w_mm"); h = el.get("h_mm")
+        if None in (w, h):
+            return None
+        return x or 0, y or 0, w, h or 0
     if kind == "panel":
-        return el.get("x_mm", 0), el.get("y_mm", 0), el["w_mm"], el.get("h_mm", 0)
+        x = el.get("x_mm"); y = el.get("y_mm"); w = el.get("w_mm"); h = el.get("h_mm")
+        if None in (w, h):
+            return None
+        return x or 0, y or 0, w, h or 0
     if kind == "data_plot":
-        return el.get("x_mm", 0), el.get("y_mm", 0), el["w_mm"], el.get("h_mm", 0)
+        x = el.get("x_mm"); y = el.get("y_mm"); w = el.get("w_mm"); h = el.get("h_mm")
+        if None in (w, h):
+            return None
+        return x or 0, y or 0, w, h or 0
     if kind == "blender_asset":
-        return el.get("x_mm", 0), el.get("y_mm", 0), el["w_mm"], 0
+        x = el.get("x_mm"); y = el.get("y_mm"); w = el.get("w_mm")
+        if w is None:
+            return None
+        return x or 0, y or 0, w, 0
     return None
 
 

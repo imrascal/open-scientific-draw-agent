@@ -25,10 +25,12 @@ description: OSDA 科学绘图：用毫米坐标生成可编辑的 SVG 示意图
 ```bash
 python -m osda_scene --version
 python -m osda_render --version
+which inkscape            # Scene Spec 默认要导出 PDF/PNG，没它就用 --formats svg 只产矢量
 ```
 
 - 没有 Blender / GPU / 内网时：3D 加 `--renderer mock`，流程能跑通，但产物是占位图；
-- 服务器模式需要 `OSDA_SERVER_HOST` / `OSDA_SERVER_USER`，以及密码或 SSH key。
+- 服务器模式需要 `OSDA_SERVER_HOST` / `OSDA_SERVER_USER`，以及密码或 SSH key；
+- Inkscape 不在 PATH 时可以用 `OSDA_INKSCAPE=/path/to/inkscape` 指定。
 
 ## Scene Spec 标准流程
 
@@ -37,10 +39,16 @@ python -m osda_render --version
 3. 渲染：
 
 ```bash
+# 有 Inkscape：PDF + PNG + SVG 全出
 python -m osda_scene --spec scene.json --outdir outputs/fig
+# 没 Inkscape：只出矢量 SVG
+python -m osda_scene --spec scene.json --outdir outputs/fig --formats svg
 ```
 
-4. 读 `summary.json`：`renderer_used` 有没有降级、`report.errors` 是否为空、`text_missing` 是否为空。
+4. 读 `summary.json`：
+   - `degraded` 是否为 true / `assets[].renderer` 是否有 `"mock"`（mock 即占位图，不能当真实渲染交付）；
+   - `report.errors` 是否为空、`report.warnings` 是否需要注意；
+   - 文本缺失在 `checks.text_missing`，不在顶层。
 5. 需要构建动画：spec 里 `progressive.enabled = true`；需要多光标演示：`swarm.enabled = true`。
 6. 交付前确认：字号 ≥ 期刊下限、线宽 ≥ 0.5 pt、PNG DPI 达标、PDF 字体已嵌入。
 

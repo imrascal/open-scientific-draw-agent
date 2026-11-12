@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import glob
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -25,6 +26,9 @@ class ExportError(RuntimeError):
 
 
 def find_inkscape(explicit: str = "") -> str:
+    # 显式参数 > OSDA_INKSCAPE 环境变量 > PATH > 默认提示路径
+    if not explicit:
+        explicit = os.environ.get("OSDA_INKSCAPE", "")
     if explicit:
         if Path(explicit).is_file():
             return explicit
@@ -35,7 +39,10 @@ def find_inkscape(explicit: str = "") -> str:
     for hint in DEFAULT_HINTS:
         if Path(hint).is_file():
             return hint
-    raise ExportError("找不到 Inkscape，请设置 OSDA_INKSCAPE 或把 inkscape.com 加入 PATH")
+    raise ExportError(
+        "找不到 Inkscape，请安装它或设置 OSDA_INKSCAPE 指向可执行文件路径。"
+        "Scene Spec 默认要导出 PDF/PNG，没 Inkscape 就退到 --formats svg 只产矢量。"
+    )
 
 
 def convert_to_svg(src: str | Path, target: str | Path,
@@ -58,20 +65,38 @@ def convert_to_svg(src: str | Path, target: str | Path,
     return out
 
 
+SUPPORTED_FORMATS = {"svg", "pdf", "png", "tiff", "eps", "ps"}
+
+
 def export(svg_path: str | Path, out_dir: str | Path,
            formats: tuple[str, ...] = ("pdf", "png"),
            dpi: int = 600, inkscape: str = "") -> dict[str, Path]:
-    """把 SVG 导出为 PDF/PNG，并用"退出码 + 文件存在"双重判定。"""
-    exe = find_inkscape(inkscape)
+    """把 SVG 导出为目标格式，用"退出码 + 文件存在"双重判定。
+
+    约定：``svg`` 源文件已存在，直接拷贝到 ``out_dir``，不走 Inkscape，
+    避免删掉源文件再导出导致 ``input not found`` 失败。其它格式全部交由 Inkscape。
+    """
     svg = Path(svg_path)
     if not svg.is_file():
         raise ExportError(f"SVG 不存在: {svg}")
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
+    unknown = [f for f in formats if f not in SUPPORTED_FORMATS]
+    if unknown:
+        raise ExportError(f"不支持的导出格式: {unknown}；可接受 {sorted(SUPPORTED_FORMATS)}")
+
     results: dict[str, Path] = {}
     for fmt in formats:
         target = out / f"{svg.stem}.{fmt}"
+        if fmt == "svg":
+            # 源文件就是这个格式，只在目标与源不是同一路径时拷贝
+            if target.resolve() != svg.resolve():
+                shutil.copy2(svg, target)
+            results[fmt] = target
+            continue
+
+        exe = find_inkscape(inkscape)
         target.unlink(missing_ok=True)
         cmd = [exe, str(svg), "--export-area-page", "--export-type", fmt,
                f"--export-filename={target}"]

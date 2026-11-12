@@ -95,6 +95,76 @@ class TestSpecValidation(unittest.TestCase):
             with self.assertRaises(SpecError):
                 load_spec(self._write(tmp, data))
 
+    def test_grid_rect_with_only_cell(self):
+        """grid 布局下 rect 只给 cell/w_mm/h_mm 不应该在 load_spec 阶段 KeyError。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            data = _spec([
+                {"id": "g1", "type": "rect", "cell": [0, 0],
+                 "w_mm": 10, "h_mm": 10, "fill": "#ccc"},
+            ], layout={"mode": "grid", "cols": 2, "gap_mm": 2, "margin_mm": 2})
+            # 加载阶段不崩就行，坐标由 apply_layout 填
+            spec = load_spec(self._write(tmp, data))
+            self.assertEqual(spec["elements"][0]["cell"], [0, 0])
+            apply_layout(spec)
+            self.assertIn("x_mm", spec["elements"][0])
+
+    def test_grid_circle_with_only_radius(self):
+        """grid 布局下 circle 只给 cell/r_mm 不应该 KeyError。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            data = _spec([
+                {"id": "c1", "type": "circle", "cell": [0, 0],
+                 "r_mm": 3, "fill": "#aaa"},
+            ], layout={"mode": "grid", "cols": 2})
+            spec = load_spec(self._write(tmp, data))
+            apply_layout(spec)
+            self.assertIn("cx_mm", spec["elements"][0])
+
+    def test_layout_type_must_be_object(self):
+        """layout 写成字符串要给出清晰 SpecError，不是 AttributeError traceback。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            data = _spec([RECT], layout="grid")
+            with self.assertRaises(SpecError) as ctx:
+                load_spec(self._write(tmp, data))
+            # jsonschema 先校验（Draft202012），错误信息可能来自 schema 或后面的语义校验；
+            # 两种都接受，只要是 SpecError、不泄漏 AttributeError 就行。
+            msg = str(ctx.exception)
+            self.assertTrue(
+                "layout" in msg and ("object" in msg or "必须是对象" in msg),
+                msg,
+            )
+
+
+class TestMock3DSummary(unittest.TestCase):
+    """Scene Spec + mock 3D 必须把 renderer 暴露在 summary 里，便于 agent 判断。"""
+
+    def test_scene_spec_summary_exposes_mock_3d(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            asset_dir = base / "fake3d"
+            asset_dir.mkdir()
+            (asset_dir / "build.py").write_text("import os\n", encoding="utf-8")
+            data = _spec([{
+                "id": "fake3d", "type": "blender_asset",
+                "asset_dir": "fake3d", "w_mm": 20,
+                "x_mm": 5, "y_mm": 5,
+            }], backend="composite")
+            path = base / "s.json"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            spec = load_spec(path)
+            spec["_base"] = str(base)
+            out = base / "out"
+
+            from osda_scene.render import prepare_elements
+            elements = prepare_elements(spec, out / "_work", renderer_override="mock")
+            result = render_scene(spec, out, formats=("svg",), elements=elements)
+
+            self.assertIn("assets", result)
+            self.assertTrue(result["assets"])
+            self.assertEqual(result["assets"][0]["id"], "fake3d")
+            self.assertEqual(result["assets"][0]["renderer"], "mock")
+            self.assertTrue(result["degraded"])
+            self.assertTrue(any("mock" in w for w in result["report"]["warnings"]))
+
 
 class TestGridLayout(unittest.TestCase):
     def test_auto_placement(self):

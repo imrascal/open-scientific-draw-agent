@@ -76,8 +76,14 @@ def judge_review(review: dict | None, criteria: Criteria) -> Verdict:
     if below_floor:
         verdict.reasons.append("低于下限维度: " + ", ".join(below_floor))
 
-    if issues and bool(review.get("pass", False)):
-        verdict.reasons.append("模型自相矛盾：issues 非空但 pass=true")
+    # 不信任模型的 pass 字段，但必须尊重 issues 非空这个事实：
+    # REVIEW_PROMPT 里明确写了 issues 非空时 pass 必须为 false。
+    # 这里即使分数全高，issues 非空也直接转成 reasons，不通过。
+    if issues:
+        verdict.reasons.append("模型报告了问题: " + "；".join(issues[:6])
+                               + ("（仅列前 6 条）" if len(issues) > 6 else ""))
+    if review.get("pass") is False:
+        verdict.reasons.append("模型判定为未通过（pass=false）")
 
     verdict.passed = not verdict.hard_fail and not verdict.reasons
     return verdict

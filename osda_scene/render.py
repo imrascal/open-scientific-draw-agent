@@ -84,7 +84,12 @@ def _plot_svg(el: dict[str, Any], base: Path, workdir: Path) -> Path:
 
 
 def _blender_png(el: dict[str, Any], base: Path, workdir: Path,
-                 renderer_override: str | None) -> tuple[Path, float | None]:
+                 renderer_override: str | None) -> tuple[Path, float | None, str]:
+    """返回 (png 路径, 物理宽度, 实际使用的 3D 后端)。
+
+    第三个值必须精确记录，Scene Spec summary 据此区分“真实渲染”与 mock，
+    避免 agent 把占位图当成真交付。
+    """
     asset_dir = (base / el["asset_dir"]).resolve()
     build = asset_dir / el.get("build", "build.py")
     if not build.is_file():
@@ -95,10 +100,12 @@ def _blender_png(el: dict[str, Any], base: Path, workdir: Path,
     resolution = tuple(el.get("resolution", [1600, 1200]))
     renderer = renderer_override or el.get("renderer", "auto")
     cfg = load_config()
+    renderer_used = "mock"  # 默认值，避免 except 路径没赋值
 
     try:
         if renderer == "mock":
             png = backends.render_mock(outdir, resolution)
+            renderer_used = "mock"
         else:
             blender = backends.resolve_blender(cfg.render.blender)
             blend = backends.build_scene(blender, str(build), outdir,
@@ -114,6 +121,7 @@ def _blender_png(el: dict[str, Any], base: Path, workdir: Path,
             else:
                 png = backends.render_local(cfg, blend, outdir, samples,
                                             resolution, "1", blender=blender)
+            renderer_used = renderer
     except backends.RenderError as exc:
         raise SpecError(f"blender_asset {el['id']} 渲染失败: {exc}") from exc
 
@@ -127,7 +135,7 @@ def _blender_png(el: dict[str, Any], base: Path, workdir: Path,
                 width = meta.target_width_mm
         except MetaError:
             pass
-    return png, width
+    return png, width, renderer_used
 
 
 def _panel_source(el: dict[str, Any], base: Path, workdir: Path) -> Path:
@@ -143,7 +151,11 @@ def _panel_source(el: dict[str, Any], base: Path, workdir: Path) -> Path:
 
 def prepare_elements(spec: dict[str, Any], workdir: Path,
                      renderer_override: str | None = None) -> list[dict[str, Any]]:
-    """把 data_plot / blender_asset / PDF panel 解析成可直接绘制的 SVG 或 PNG。"""
+    """把 data_plot / blender_asset / PDF panel 解析成可直接绘制的 SVG 或 PNG。
+
+    blender_asset 解析后会加一个 ``_renderer`` 字段，等于实际使用的 3D 后端
+    （"mock" / "server" / "local"），下游用这个字段判断是否是占位图。
+    """
     base = Path(spec.get("_base", "."))
     resolved: list[dict[str, Any]] = []
     for el in ordered_elements(spec):
@@ -152,9 +164,10 @@ def prepare_elements(spec: dict[str, Any], workdir: Path,
             svg = _plot_svg(el, base, workdir)
             resolved.append({**el, "type": "panel", "src": str(svg)})
         elif kind == "blender_asset":
-            png, width = _blender_png(el, base, workdir, renderer_override)
+            png, width, renderer_used = _blender_png(el, base, workdir, renderer_override)
             resolved.append({**el, "type": "image", "src": str(png),
-                             "w_mm": width or el["w_mm"], "embed": True})
+                             "w_mm": width or el["w_mm"], "embed": True,
+                             "_renderer": renderer_used})
         elif kind == "panel":
             resolved.append({**el, "src": str(_panel_source(el, base, workdir))})
         else:
@@ -304,6 +317,17 @@ def render_scene(spec: dict[str, Any], outdir: str | Path, *,
         if checks["pdf_fonts"].get("ok") is False:
             report["warnings"].append("PDF 中未检测到嵌入字体（启发式判断）")
 
+    # 汇总 3D 素材实际用的后端：mock 就是占位图，必须在 summary 里明示
+    assets: list[dict[str, str]] = []
+    for el in elements:
+        if "_renderer" in el:
+            assets.append({"id": el["id"], "renderer": el["_renderer"]})
+    degraded = any(a["renderer"] == "mock" for a in assets)
+    if degraded:
+        report["warnings"].append(
+            "存在 mock 渲染的 3D 素材（占位图），提交前请用真实后端替换: "
+            + ", ".join(a["id"] for a in assets if a["renderer"] == "mock"))
+
     return {
         "ok": report["ok"],
         "backend": resolve_backend(spec),
@@ -311,4 +335,6 @@ def render_scene(spec: dict[str, Any], outdir: str | Path, *,
         "files": {k: str(v) for k, v in files.items()},
         "report": report,
         "checks": checks,
+        "assets": assets,
+        "degraded": degraded,
     }

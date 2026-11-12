@@ -1,9 +1,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""把外部 SVG 组合进画布：读 viewBox、缩放、加 id 前缀。"""
+"""把外部 SVG 组合进画布：读 viewBox、缩放、加 id 前缀、清洗危险节点。"""
 
 from __future__ import annotations
 
 import copy
+import re
 from pathlib import Path
 
 from lxml import etree
@@ -11,13 +12,30 @@ from lxml import etree
 from .svg import SVG_NS
 
 
+def _parse_length(value: str | None, default: float = 100.0) -> float:
+    """从 SVG length 属性里提取数值，接受 ``80mm`` / ``2.5cm`` / ``600px`` / ``120`` 等。
+
+    历史上用 ``rstrip("pt")`` 其实是按字符剥离 p 和 t，会把 ``80mm`` 变成 ``80mm``（没变），
+    再被 float() 直接拒绝。这里用正则只吃数字部分，单位扔一边。
+    """
+    if value is None:
+        return default
+    value = str(value).strip()
+    m = re.match(r"^([+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)", value)
+    if not m:
+        return default
+    return float(m.group(1))
+
+
 def svg_viewbox(path: str | Path) -> tuple[float, float, float, float]:
     root = etree.parse(str(path)).getroot()
     vb = root.get("viewBox")
     if vb:
-        return tuple(float(v) for v in vb.replace(",", " ").split())  # type: ignore[return-value]
-    width = float(str(root.get("width", "100")).rstrip("pt"))
-    height = float(str(root.get("height", "100")).rstrip("pt"))
+        parts = vb.replace(",", " ").split()
+        if len(parts) == 4:
+            return tuple(_parse_length(p) for p in parts)  # type: ignore[return-value]
+    width = _parse_length(root.get("width"), 100.0)
+    height = _parse_length(root.get("height"), 100.0)
     return 0.0, 0.0, width, height
 
 
@@ -49,7 +67,11 @@ def namespace_ids(group, prefix: str) -> None:
 def place_svg(canvas, svg_path: str | Path, x: float, y: float,
               box_w: float, box_h: float | None = None,
               prefix: str = "", opacity: float | None = None) -> tuple[float, float]:
-    """等比放入 (x, y) 开始、宽 box_w 的框，返回实际占据的 (w, h)。"""
+    """等比放入 (x, y) 开始、宽 box_w 的框，返回实际占据的 (w, h)。
+
+    嵌入前会剥离外部 SVG 里的 ``script`` / ``foreignObject`` / ``style`` 节点，
+    以及所有 ``on*`` 属性，避免第三方面板在合成图里执行脚本或全局样式污染宿主。
+    """
     vx, vy, vw, vh = svg_viewbox(svg_path)
     scale = box_w / vw
     if box_h is not None:
@@ -63,11 +85,38 @@ def place_svg(canvas, svg_path: str | Path, x: float, y: float,
     group = etree.SubElement(canvas.layer, f"{{{SVG_NS}}}g", attrs)
     for child in root:
         tag = child.tag.rsplit("}", 1)[-1] if isinstance(child.tag, str) else ""
-        if tag in ("metadata", "title", "desc"):
+        if tag in ("metadata", "title", "desc", "script", "foreignObject"):
             continue
         if tag == "rect" and child.get("id") == "page":
             continue
-        group.append(copy.deepcopy(child))
+        cloned = copy.deepcopy(child)
+        _sanitize(cloned)
+        group.append(cloned)
     if prefix:
         namespace_ids(group, prefix)
     return vw * scale, vh * scale
+
+
+def _sanitize(el) -> None:
+    """递归清理外部 SVG 里的危险节点和属性。原地修改。"""
+    remove_tags = {"script", "foreignObject"}
+    # 注意：style 本身不是脚本，但会污染宿主样式；保守处理只剥全局 style
+    for child in list(el):
+        if isinstance(child.tag, str) and child.tag.rsplit("}", 1)[-1] in remove_tags:
+            el.remove(child)
+            continue
+        _sanitize(child)
+
+    # 剥掉所有事件属性（onclick / onload / onerror ...）
+    for attr in list(el.attrib.keys()):
+        local = attr.rsplit("}", 1)[-1]
+        if local.startswith("on"):
+            del el.attrib[attr]
+
+    # 剥掉可能的 javascript: URL（xlink:href / href）
+    for attr in list(el.attrib.keys()):
+        local = attr.rsplit("}", 1)[-1]
+        if local in ("href",):
+            val = el.attrib[attr].strip().lower()
+            if val.startswith(("javascript:", "data:text/html")):
+                del el.attrib[attr]
