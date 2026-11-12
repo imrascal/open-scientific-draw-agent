@@ -93,8 +93,9 @@ def build(out_dir: Path) -> None:
 
     _box("substrate", (40, 24, 2), (0, 0, -1), substrate)
     _box("channel", (20, 10, 0.6), (0, 0, 0.3), channel)
-    _box("source", (6, 10, 1.2), (-13, 0, 0.6), metal)
-    _box("drain", (6, 10, 1.2), (13, 0, 0.6), metal)
+    # 电极向沟道内重叠 1 mm（中心 ±12、宽 6），保证接触而不是刚好贴面/留缝
+    _box("source", (6, 10, 1.2), (-12, 0, 0.6), metal)
+    _box("drain", (6, 10, 1.2), (12, 0, 0.6), metal)
 
     # --- 相机：正交 3/4 视角，保证尺度可换算且能看出厚度 ---
     bpy.ops.object.camera_add(location=(95, -110, 80))

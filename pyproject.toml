@@ -1,11 +1,18 @@
 [project]
 name = "osda-render"
-version = "0.1.0"
-description = "OSDA 的 Blender 渲染桥接层：.blend/build.py -> PNG -> 可选视觉审核"
+version = "0.2.0"
+description = "OSDA 的可视化套件：Scene Spec + 矢量绘制 + Blender 渲染桥接"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "GPL-3.0-or-later" }
-dependencies = []
+
+# 核心依赖：osda_vector / osda_scene 一导入就用。
+# Pillow / paramiko / requests 保留 optional，mock 3D、远程渲染、审核各自按需安装。
+dependencies = [
+    "lxml>=5.0",
+    "jsonschema>=4.21",
+    "matplotlib>=3.7",
+]
 
 [project.optional-dependencies]
 server = ["paramiko>=3.0"]
@@ -18,3 +25,7 @@ osda-scene = "osda_scene.cli:main"
 
 [tool.setuptools]
 packages = ["osda_render", "osda_vector", "osda_scene"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+osda_scene = ["schema/*.json"]

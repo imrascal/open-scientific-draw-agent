@@ -214,7 +214,12 @@ def main(argv: list[str] | None = None) -> int:
     # ---- 审核（可选）----
     verdict = None
     if cfg.review.provider != "none":
-        review = review_image(cfg, png)
+        try:
+            review = review_image(cfg, png)
+        except ConfigError as exc:
+            print(f"FAIL 审核配置错误: {exc}")
+            _write_json(job_dir / "summary.json", {**summary, "error": f"review config: {exc}"})
+            return EXIT_CONFIG
         if review is None:
             print("FAIL 审核未获得结果")
             _write_json(job_dir / "summary.json", {**summary, "error": "review failed"})

@@ -95,6 +95,76 @@ class TestSpecValidation(unittest.TestCase):
             with self.assertRaises(SpecError):
                 load_spec(self._write(tmp, data))
 
+    def test_grid_rect_with_only_cell(self):
+        """grid 布局下 rect 只给 cell/w_mm/h_mm 不应该在 load_spec 阶段 KeyError。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            data = _spec([
+                {"id": "g1", "type": "rect", "cell": [0, 0],
+                 "w_mm": 10, "h_mm": 10, "fill": "#ccc"},
+            ], layout={"mode": "grid", "cols": 2, "gap_mm": 2, "margin_mm": 2})
+            # 加载阶段不崩就行，坐标由 apply_layout 填
+            spec = load_spec(self._write(tmp, data))
+            self.assertEqual(spec["elements"][0]["cell"], [0, 0])
+            apply_layout(spec)
+            self.assertIn("x_mm", spec["elements"][0])
+
+    def test_grid_circle_with_only_radius(self):
+        """grid 布局下 circle 只给 cell/r_mm 不应该 KeyError。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            data = _spec([
+                {"id": "c1", "type": "circle", "cell": [0, 0],
+                 "r_mm": 3, "fill": "#aaa"},
+            ], layout={"mode": "grid", "cols": 2})
+            spec = load_spec(self._write(tmp, data))
+            apply_layout(spec)
+            self.assertIn("cx_mm", spec["elements"][0])
+
+    def test_layout_type_must_be_object(self):
+        """layout 写成字符串要给出清晰 SpecError，不是 AttributeError traceback。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            data = _spec([RECT], layout="grid")
+            with self.assertRaises(SpecError) as ctx:
+                load_spec(self._write(tmp, data))
+            # jsonschema 先校验（Draft202012），错误信息可能来自 schema 或后面的语义校验；
+            # 两种都接受，只要是 SpecError、不泄漏 AttributeError 就行。
+            msg = str(ctx.exception)
+            self.assertTrue(
+                "layout" in msg and ("object" in msg or "必须是对象" in msg),
+                msg,
+            )
+
+
+class TestMock3DSummary(unittest.TestCase):
+    """Scene Spec + mock 3D 必须把 renderer 暴露在 summary 里，便于 agent 判断。"""
+
+    def test_scene_spec_summary_exposes_mock_3d(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            asset_dir = base / "fake3d"
+            asset_dir.mkdir()
+            (asset_dir / "build.py").write_text("import os\n", encoding="utf-8")
+            data = _spec([{
+                "id": "fake3d", "type": "blender_asset",
+                "asset_dir": "fake3d", "w_mm": 20,
+                "x_mm": 5, "y_mm": 5,
+            }], backend="composite")
+            path = base / "s.json"
+            path.write_text(json.dumps(data), encoding="utf-8")
+            spec = load_spec(path)
+            spec["_base"] = str(base)
+            out = base / "out"
+
+            from osda_scene.render import prepare_elements
+            elements = prepare_elements(spec, out / "_work", renderer_override="mock")
+            result = render_scene(spec, out, formats=("svg",), elements=elements)
+
+            self.assertIn("assets", result)
+            self.assertTrue(result["assets"])
+            self.assertEqual(result["assets"][0]["id"], "fake3d")
+            self.assertEqual(result["assets"][0]["renderer"], "mock")
+            self.assertTrue(result["degraded"])
+            self.assertTrue(any("mock" in w for w in result["report"]["warnings"]))
+
 
 class TestGridLayout(unittest.TestCase):
     def test_auto_placement(self):
@@ -117,6 +187,16 @@ class TestGridLayout(unittest.TestCase):
 
 
 class TestRender(unittest.TestCase):
+    def test_low_output_dpi_warns_against_journal_requirement(self):
+        """journal.dpi 是期刊要求，导出 DPI 低于它时必须给出 warning。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            spec = _spec([RECT, TEXT], journal={"font_family": "Arial",
+                                                "min_font_pt": 7,
+                                                "min_stroke_pt": 0.5, "dpi": 600})
+            out = Path(tmp) / "out"
+            result = render_scene(spec, out, formats=("svg",), dpi=150)
+            self.assertTrue(any("journal.dpi" in w for w in result["report"]["warnings"]))
+
     @unittest.skipUnless(HAS_INKSCAPE, "未安装 Inkscape")
     def test_render_vector_and_tiff(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -202,6 +282,37 @@ class TestRender(unittest.TestCase):
             result = render_scene(spec, base / "out", dpi=150)
             self.assertTrue(result["ok"], result["report"]["errors"])
             self.assertGreater(Path(result["files"]["pdf"]).stat().st_size, 0)
+
+
+class TestSwarmOptions(unittest.TestCase):
+    """swarm.trail / presentation_only 是文档化字段，必须真的生效。"""
+
+    def _html(self, tmp, **swarm):
+        data = _spec([RECT, TEXT], swarm={"enabled": True, "cursors": 3,
+                                          "duration_s": 3, **swarm})
+        path = Path(tmp) / "s.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        spec = load_spec(path)
+        spec["_base"] = tmp
+        apply_layout(spec)
+
+        from osda_scene.render import build_canvas, prepare_elements
+        out = Path(tmp) / "out"
+        elements = prepare_elements(spec, out / "_work")
+        svg = build_canvas(spec, elements).save(out / "t.svg")
+        build_swarm_html(svg, spec, elements, out / "s.html")
+        return (out / "s.html").read_text(encoding="utf-8")
+
+    def test_trail_and_presentation_only_applied(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            html = self._html(tmp, trail=5)
+            self.assertIn("const trailLen = 5;", html)
+            self.assertIn(".bar, .note { display: none; }", html)
+
+    def test_controls_visible_when_not_presentation_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            html = self._html(tmp, presentation_only=False)
+            self.assertNotIn(".bar, .note { display: none; }", html)
 
 
 if __name__ == "__main__":

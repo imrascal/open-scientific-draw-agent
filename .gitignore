@@ -3,6 +3,11 @@ __pycache__/
 .venv/
 venv/
 
+# 构建产物
+build/
+dist/
+*.egg-info/
+
 # 渲染产物与中间文件
 outputs/
 *.blend

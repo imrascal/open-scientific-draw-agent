@@ -5,9 +5,9 @@
 
 > **English**: OSDA turns a declarative JSON scene into editable vector figures (SVG/PDF) and, when needed, 3D assets rendered by Blender. It targets publication-quality scientific figures: millimetre-accurate layout, journal checks, multi-panel composition, progressive GIF and a build replay. Vector export needs Inkscape; 3D is optional.
 
-![example panel](docs/preview.png)
+![example panel](docs/preview.png?v=20261112b)
 
-![build replay](docs/preview.gif)
+![build replay](docs/preview.gif?v=20261112b)
 
 三个子系统，职责分开：
 
@@ -58,7 +58,7 @@ python -m osda_scene --spec examples/specs/heterostructure.json --outdir outputs
 
 产物：`*.svg` / `*.pdf` / `*.png` / 可选 `*.tiff`、`summary.json`；开启 progressive 会额外生成 `frames/` 与 GIF，开启 swarm 生成自包含 HTML。
 
-Schema 在 [`schema/scene.schema.json`](schema/scene.schema.json)（JSON Schema 2020-12），校验用本机已有的 `jsonschema`，无需 pydantic。
+Schema 在 [`schema/scene.schema.json`](schema/scene.schema.json)（JSON Schema 2020-12），打包后会进 `osda_scene/schema/` 一并随 wheel 发布；校验用本机已有的 `jsonschema`，无需 pydantic。
 
 | 能力 | 说明 |
 |---|---|
@@ -73,9 +73,9 @@ Schema 在 [`schema/scene.schema.json`](schema/scene.schema.json)（JSON Schema 
 
 示例：`heterostructure.json`（2D + progressive + swarm）、`panel_full.json`（2×2 混合）、`panel_grid.json`（纯数据图网格）、`asset_3d.json`（Blender 素材回填）。
 
-`swarm` 只是演示：把最终 SVG 包成一条时间轴，元素按 stroke-dashoffset 逐段画出，光标用 `getPointAtLength()` 沿轮廓移动，多个光标分头同时画各自负责的区域。它不参与出图，也不改变任何静态产物。
+`swarm` 只是演示：把最终 SVG 包成一条时间轴，元素按 stroke-dashoffset 逐段画出，光标用 `getPointAtLength()` 沿轮廓移动，多个光标分头同时画各自负责的区域。它不参与出图，也不改变任何静态产物。`swarm.trail` 控制尾迹长度（0 表示不留尾迹），`swarm.presentation_only`（默认 true）隐藏播放控制条和说明文字，只留动画本身。
 
-CLI 参数：`--renderer auto|server|local|mock`、`--formats svg,pdf,png,tiff`、`--dpi`、`--color-mode RGB|CMYK`、`--no-progressive`、`--no-swarm`。
+CLI 参数：`--renderer auto|server|local|mock`、`--formats svg,pdf,png,tiff`（`svg` 不走 Inkscape，没有它时用 `--formats svg` 只产矢量）、`--dpi`、`--color-mode RGB|CMYK`、`--no-progressive`、`--no-swarm`。
 
 ## 2D 矢量（osda_vector）
 
@@ -119,6 +119,7 @@ python examples/fig_panel.py --asset3d outputs/fig_stack/../3d/render_0001.png -
 
 | 变量 | 含义 |
 |---|---|
+| `OSDA_INKSCAPE` | Inkscape 可执行文件路径（没有它就用 `--formats svg` 只产矢量） |
 | `OSDA_SERVER_ENABLED` | 是否启用服务器 |
 | `OSDA_SERVER_HOST` / `OSDA_SERVER_USER` | 主机与账号（**无默认值**） |
 | `OSDA_SERVER_PASSWORD` / `OSDA_SSH_KEY` | 密码或私钥（二选一，**无默认值**） |
@@ -169,6 +170,7 @@ python examples/fig_panel.py --asset3d outputs/fig_stack/../3d/render_0001.png -
 - **CMYK 只作用于 TIFF**，PDF 仍是 RGB（Inkscape CLI 不提供 CMYK PDF 导出）；
 - **文本完整性只校验 spec 中声明的 `text` 元素**，不检查嵌入面板内部的文字；
 - 嵌入面板按目标尺寸缩放，若源图不是按最终尺寸生成，内部字号会随之变化；
+- 外部 SVG 面板嵌入时会被清洗：`<script>` / `<foreignObject>` / 所有 `on*` 属性会被剥掉（防执行脚本）；全局 `<style>` 也不建议放在 panel 里，会污染宿主版面；
 - 尚未提供 MCP / 多 Agent 接口。
 
 ## 许可

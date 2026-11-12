@@ -7,6 +7,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from osda_vector import Canvas, check_text_present, export, find_inkscape, verify_svg
+from osda_vector.compose import place_svg, svg_viewbox
+from osda_vector.export import ExportError
 from osda_vector.svg import PT2MM
 
 
@@ -26,6 +28,13 @@ class TestCanvas(unittest.TestCase):
         self.assertEqual(len(tspans), 2)
         self.assertEqual(tspans[1].get("font-size"), "70%")
         self.assertIn("dy", tspans[1].attrib)
+
+    def test_text_runs_bold(self):
+        c = Canvas(40, 20)
+        c.text(5, 10, "", runs=[{"t": "Si"}, {"t": "2", "sub": True, "bold": True}])
+        tspans = list(c.layer[-1])
+        self.assertIsNone(tspans[0].get("font-weight"))
+        self.assertEqual(tspans[1].get("font-weight"), "bold")
 
     def test_font_size_converted_to_mm(self):
         c = Canvas(40, 20)
@@ -92,6 +101,102 @@ class TestExport(unittest.TestCase):
             for path in files.values():
                 self.assertTrue(path.is_file())
                 self.assertGreater(path.stat().st_size, 0)
+
+    def test_svg_format_does_not_self_destruct(self):
+        """回归：--formats svg 会删掉源 SVG 再尝试导出，导致 input not found。
+        现在 svg 直接拷贝，不走 Inkscape。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            c = Canvas(30, 20)
+            c.rect(2, 2, 26, 16, fill="#EEEEEE")
+            svg = c.save(Path(tmp) / "t.svg")
+            files = export(svg, Path(tmp) / "out", formats=("svg",))
+            self.assertIn("svg", files)
+            self.assertTrue(files["svg"].is_file())
+            # 源文件也必须还在（export 的输入不能被自己删掉）
+            self.assertTrue(svg.is_file())
+
+    def test_unknown_format_rejected(self):
+        """不可接受的格式必须在 Inkscape 调用之前就报错，不搞半吊子。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            c = Canvas(30, 20)
+            svg = c.save(Path(tmp) / "t.svg")
+            with self.assertRaises(ExportError) as ctx:
+                export(svg, Path(tmp) / "out", formats=("pdf", "bogus"))
+            self.assertIn("不支持的导出格式", str(ctx.exception))
+
+
+class TestCompose(unittest.TestCase):
+    def test_svg_viewbox_parses_mm_units(self):
+        """历史 bug：rstrip('pt') 对 '80mm' 无效，float() 直接拒绝。
+        现在用正则只吃数字。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "a.svg"
+            p.write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="80mm" height="50mm">'
+                '<rect width="10" height="10"/></svg>',
+                encoding="utf-8",
+            )
+            vx, vy, vw, vh = svg_viewbox(p)
+            self.assertEqual((vx, vy), (0.0, 0.0))
+            self.assertAlmostEqual(vw, 80.0)
+            self.assertAlmostEqual(vh, 50.0)
+
+    def test_embedded_svg_sanitized(self):
+        """外部 SVG 面板嵌入时 script/foreignObject/on* 属性必须被剥掉。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            evil = Path(tmp) / "evil.svg"
+            evil.write_text(
+                '<svg xmlns="http://www.w3.org/2000/svg" width="10mm" height="10mm">'
+                '<script>alert(1)</script>'
+                '<rect width="10" height="10" onload="alert(2)"/>'
+                '<foreignObject><div onclick="alert(3)">x</div></foreignObject>'
+                '</svg>',
+                encoding="utf-8",
+            )
+            c = Canvas(20, 20)
+            place_svg(c, evil, 0, 0, 10)
+            out = c.save(Path(tmp) / "out.svg").read_text(encoding="utf-8")
+            self.assertNotIn("<script>", out)
+            self.assertNotIn("foreignObject", out)
+            self.assertNotIn("onload=", out)
+            self.assertNotIn("onclick=", out)
+
+
+class TestExampleGeometry(unittest.TestCase):
+    """电极轮廓必须沿 WSe2/MoS2/底部 hBN 的台阶共形贴合，不能覆盖材料顶面。"""
+
+    def _polygon(self, canvas, element_id):
+        for el in canvas.layer.iter():
+            if el.get("id") == element_id:
+                self.assertTrue(
+                    isinstance(el.tag, str) and el.tag.endswith("polygon"),
+                    f"{element_id} 应该是 polygon",
+                )
+                return [tuple(float(v) for v in point.split(","))
+                        for point in el.get("points").split()]
+        self.fail(f"找不到元素 {element_id}")
+
+    def _edges(self, points):
+        return {frozenset((a, b)) for a, b in zip(points, points[1:] + points[:1])}
+
+    def test_electrodes_conform_to_stack_profile(self):
+        from examples import fig_stack
+
+        canvas = fig_stack.build()
+        source_edges = self._edges(self._polygon(canvas, "source"))
+        drain_edges = self._edges(self._polygon(canvas, "drain"))
+
+        # 左侧电极：分别贴住 WSe2、MoS2、底部 hBN 的左边缘
+        for a, b in (((21, 29), (21, 31.5)),      # WSe2
+                     ((17, 31.5), (17, 34)),      # MoS2
+                     ((14, 34), (14, 37))):       # hBN
+            self.assertIn(frozenset((a, b)), source_edges)
+
+        # 右侧电极：分别贴住三层右边缘
+        for a, b in (((39, 29), (39, 31.5)),      # WSe2
+                     ((43, 31.5), (43, 34)),      # MoS2
+                     ((47, 34), (47, 37))):       # hBN
+            self.assertIn(frozenset((a, b)), drain_edges)
 
 
 if __name__ == "__main__":

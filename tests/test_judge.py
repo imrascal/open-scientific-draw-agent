@@ -48,7 +48,21 @@ class TestJudge(unittest.TestCase):
     def test_model_self_contradiction(self):
         verdict = judge_review(_review(GOOD, passed=True, issues=["主体偏左"]), Criteria())
         self.assertFalse(verdict.passed)
-        self.assertTrue(any("自相矛盾" in r for r in verdict.reasons))
+        # issues 非空本身就是失败原因，不再只看"自相矛盾"
+        self.assertTrue(verdict.reasons)
+
+    def test_issues_nonempty_always_fails(self):
+        """即使分数全高、模型自己说 pass=false，只要 issues 非空就必须不通过。"""
+        verdict = judge_review(_review(GOOD, passed=False, issues=["主体偏左"]), Criteria())
+        self.assertFalse(verdict.passed)
+        self.assertTrue(any("模型报告了问题" in r for r in verdict.reasons))
+        self.assertTrue(any("pass=false" in r for r in verdict.reasons))
+
+    def test_pass_false_alone_fails(self):
+        """pass=false 但 issues 为空也应该不通过。"""
+        verdict = judge_review(_review(GOOD, passed=False, issues=[]), Criteria())
+        self.assertFalse(verdict.passed)
+        self.assertTrue(any("pass=false" in r for r in verdict.reasons))
 
     def test_empty_result(self):
         verdict = judge_review(None, Criteria())

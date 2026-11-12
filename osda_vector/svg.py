@@ -35,8 +35,7 @@ class Canvas:
         self.root.set("viewBox", f"0 0 {width_mm:g} {height_mm:g}")
         self.root.set("version", "1.1")
 
-        defs = etree.SubElement(self.root, f"{{{SVG_NS}}}defs")
-        # 透明背景矩形，保证导出 PDF/PNG 时画布尺寸稳定
+        # 白色背景矩形：导出 PDF/PNG 时固定白底，避免透明底在不同阅读器里变黑
         etree.SubElement(self.root, f"{{{SVG_NS}}}rect", {
             "id": "page", "x": "0", "y": "0",
             "width": f"{width_mm:g}", "height": f"{height_mm:g}",
@@ -71,19 +70,26 @@ class Canvas:
         })
 
     def polygon(self, points: Sequence[tuple[float, float]], *,
-                fill: str = "#FFFFFF", stroke: str = "none", stroke_pt: float = 0.5):
-        return etree.SubElement(self.layer, f"{{{SVG_NS}}}polygon", {
+                fill: str = "#FFFFFF", stroke: str = "none", stroke_pt: float = 0.5,
+                element_id: str | None = None):
+        attrs = {
             "points": " ".join(f"{x:g},{y:g}" for x, y in points),
             "fill": fill, "stroke": stroke,
             "stroke-width": f"{stroke_pt * PT2MM:g}",
-        })
+        }
+        if element_id:
+            attrs["id"] = element_id
+        return etree.SubElement(self.layer, f"{{{SVG_NS}}}polygon", attrs)
 
     def path(self, d: str, *, fill: str = "none", stroke: str = "#000000",
-             stroke_pt: float = 0.75, dash: str | None = None):
+             stroke_pt: float = 0.75, dash: str | None = None,
+             element_id: str | None = None):
         attrs = {"d": d, "fill": fill, "stroke": stroke,
                  "stroke-width": f"{stroke_pt * PT2MM:g}"}
         if dash:
             attrs["stroke-dasharray"] = dash
+        if element_id:
+            attrs["id"] = element_id
         return etree.SubElement(self.layer, f"{{{SVG_NS}}}path", attrs)
 
     def line(self, x1: float, y1: float, x2: float, y2: float, *,
@@ -161,6 +167,8 @@ class Canvas:
             tsp.text = str(run.get("t", ""))
             if level:
                 tsp.set("font-size", "70%")
+            if run.get("bold"):
+                tsp.set("font-weight", "bold")
             if level != offset:
                 shift = (level - offset) * 0.32
                 tsp.set("dy", f"{shift:+.2f}em")

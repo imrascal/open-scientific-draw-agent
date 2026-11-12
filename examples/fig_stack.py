@@ -46,11 +46,16 @@ def build() -> Canvas:
     c.rect(24, 26.5, 12, 2.5, fill=COLORS["hbn"], stroke=COLORS["edge"], stroke_pt=0.5,
            element_id="hbn_top")
 
-    # --- 电极：贯穿到 SiO2 的两端接触 ---
-    c.rect(8, 31.5, 6, 5.5, fill=COLORS["au"], stroke="#8A6D12", stroke_pt=0.5,
-           element_id="source")
-    c.rect(49, 31.5, 6, 5.5, fill=COLORS["au"], stroke="#8A6D12", stroke_pt=0.5,
-           element_id="drain")
+    # --- 电极：轮廓沿 WSe2/MoS2/底部 hBN 的台阶共形贴合 ---
+    # 电极只与各层侧壁接触，不覆盖任何二维材料的顶面；底部落在 SiO2（y=37）。
+    c.polygon([(8, 29), (21, 29), (21, 31.5), (17, 31.5),
+               (17, 34), (14, 34), (14, 37), (8, 37)],
+              fill=COLORS["au"], stroke="#8A6D12", stroke_pt=0.5,
+              element_id="source")
+    c.polygon([(39, 29), (52, 29), (52, 37), (47, 37),
+               (47, 34), (43, 34), (43, 31.5), (39, 31.5)],
+              fill=COLORS["au"], stroke="#8A6D12", stroke_pt=0.5,
+              element_id="drain")
 
     # --- 引导线与标签（斜引导线，避免 2.5 mm 层厚导致标签挤在一起）---
     labels = [
@@ -65,13 +70,12 @@ def build() -> Canvas:
         c.line(56, y_from, 62, y_label, stroke="#666666", stroke_pt=0.5)
         c.text(63, y_label + 0.9, "", size_pt=7, runs=runs)
 
-    # 电极标签直接放在色块里，避免与右侧标签争空间
+    # 电极标签直接放在色块里，避开叠层与右侧引线
     c.text(9.4, 35.2, "Au", size_pt=7, fill="#FFFFFF", weight="bold")
-    c.text(50.4, 35.2, "Au", size_pt=7, fill="#FFFFFF", weight="bold")
+    c.text(48.0, 35.2, "Au", size_pt=7, fill="#FFFFFF", weight="bold")
 
-    # --- vdW 界面标注：走左侧空白，不压任何图层 ---
-    c.text(14.5, 24.6, "vdW gap", size_pt=7, fill="#B03A2E")
-    c.line(17.0, 25.4, 22.4, 31.2, stroke="#B03A2E", stroke_pt=0.6, arrow=True)
+    # 不再标注 "vdW gap"：电极与二维叠层之间是直接接触，
+    # 真正的范德华界面是层间界面，在截面里不适合用一条斜箭头笼统表示。
 
     # --- 面板内标题 ---
     c.text(8, 10, "vdW heterostructure FET", size_pt=8, weight="bold")
