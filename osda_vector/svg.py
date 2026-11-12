@@ -69,14 +69,36 @@ class Canvas:
             "stroke-width": f"{stroke_pt * PT2MM:g}",
         })
 
+    def ellipse(self, cx: float, cy: float, rx: float, ry: float, *,
+                fill: str = "#FFFFFF", stroke: str = "none", stroke_pt: float = 0.5,
+                dash: str | None = None, opacity: float = 1.0,
+                element_id: str | None = None):
+        attrs = {
+            "cx": f"{cx:g}", "cy": f"{cy:g}", "rx": f"{rx:g}", "ry": f"{ry:g}",
+            "fill": fill, "stroke": stroke,
+            "stroke-width": f"{stroke_pt * PT2MM:g}",
+        }
+        if dash:
+            attrs["stroke-dasharray"] = dash
+        if opacity != 1.0:
+            attrs["opacity"] = f"{opacity:g}"
+        if element_id:
+            attrs["id"] = element_id
+        return etree.SubElement(self.layer, f"{{{SVG_NS}}}ellipse", attrs)
+
     def polygon(self, points: Sequence[tuple[float, float]], *,
                 fill: str = "#FFFFFF", stroke: str = "none", stroke_pt: float = 0.5,
+                dash: str | None = None, opacity: float = 1.0,
                 element_id: str | None = None):
         attrs = {
             "points": " ".join(f"{x:g},{y:g}" for x, y in points),
             "fill": fill, "stroke": stroke,
             "stroke-width": f"{stroke_pt * PT2MM:g}",
         }
+        if dash:
+            attrs["stroke-dasharray"] = dash
+        if opacity != 1.0:
+            attrs["opacity"] = f"{opacity:g}"
         if element_id:
             attrs["id"] = element_id
         return etree.SubElement(self.layer, f"{{{SVG_NS}}}polygon", attrs)

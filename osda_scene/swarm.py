@@ -22,7 +22,7 @@ PALETTE = [
 ]
 
 CURSOR_SHAPE = "M0,0 L0,13 L3.6,9.6 L6.2,15 L8.4,13.8 L5.9,8.6 L10.5,7.2 Z"
-SHAPE_TYPES = {"rect", "circle", "line", "arrow", "path"}
+SHAPE_TYPES = {"rect", "circle", "ellipse", "line", "arrow", "path", "polygon"}
 
 
 def _anchor(el: dict[str, Any], fallback: tuple[float, float]) -> tuple[float, float]:
@@ -31,6 +31,14 @@ def _anchor(el: dict[str, Any], fallback: tuple[float, float]) -> tuple[float, f
         return el["x_mm"] + el["w_mm"] / 2, el["y_mm"] + el["h_mm"] / 2
     if kind == "circle":
         return el["cx_mm"], el["cy_mm"]
+    if kind == "ellipse":
+        return el["cx_mm"], el["cy_mm"]
+    if kind == "polygon":
+        xs = [p[0] for p in el["points_mm"]]
+        ys = [p[1] for p in el["points_mm"]]
+        return (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+    if kind == "raw_svg":
+        return el.get("x_mm", 0) or 0, el.get("y_mm", 0) or 0
     if kind in ("line", "arrow"):
         return (el["x1_mm"] + el["x2_mm"]) / 2, (el["y1_mm"] + el["y2_mm"]) / 2
     if kind == "text":

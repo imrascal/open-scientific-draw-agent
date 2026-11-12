@@ -3,45 +3,101 @@
   "$id": "https://osda.local/scene.schema.json",
   "title": "OSDA Scene Specification",
   "type": "object",
-  "required": ["version", "canvas", "elements"],
+  "required": [
+    "version",
+    "canvas",
+    "elements"
+  ],
   "additionalProperties": false,
   "properties": {
-    "version": { "const": "1.0" },
-    "name": { "type": "string", "description": "输出文件名（不含扩展名）" },
+    "version": {
+      "const": "1.0"
+    },
+    "name": {
+      "type": "string",
+      "description": "输出文件名（不含扩展名）"
+    },
     "backend": {
-      "enum": ["auto", "inkscape", "blender", "composite", "matplotlib"],
+      "enum": [
+        "auto",
+        "inkscape",
+        "blender",
+        "composite",
+        "matplotlib"
+      ],
       "default": "auto"
     },
     "canvas": {
       "type": "object",
-      "required": ["width_mm", "height_mm"],
+      "required": [
+        "width_mm",
+        "height_mm"
+      ],
       "additionalProperties": false,
       "properties": {
-        "width_mm": { "type": "number", "exclusiveMinimum": 0 },
-        "height_mm": { "type": "number", "exclusiveMinimum": 0 }
+        "width_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "height_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
       }
     },
     "journal": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "font_family": { "type": "string", "default": "Arial" },
-        "min_font_pt": { "type": "number", "default": 7 },
-        "min_stroke_pt": { "type": "number", "default": 0.5 },
-        "dpi": { "type": "integer", "default": 600 }
+        "font_family": {
+          "type": "string",
+          "default": "Arial"
+        },
+        "min_font_pt": {
+          "type": "number",
+          "default": 7
+        },
+        "min_stroke_pt": {
+          "type": "number",
+          "default": 0.5
+        },
+        "dpi": {
+          "type": "integer",
+          "default": 600
+        }
       }
     },
     "layout": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "mode": { "enum": ["free", "grid"], "default": "free" },
-        "cols": { "type": "integer", "minimum": 1, "default": 2 },
-        "gap_mm": { "type": "number", "minimum": 0, "default": 4 },
-        "margin_mm": { "type": "number", "minimum": 0, "default": 5 },
+        "mode": {
+          "enum": [
+            "free",
+            "grid"
+          ],
+          "default": "free"
+        },
+        "cols": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 2
+        },
+        "gap_mm": {
+          "type": "number",
+          "minimum": 0,
+          "default": 4
+        },
+        "margin_mm": {
+          "type": "number",
+          "minimum": 0,
+          "default": 5
+        },
         "order": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "绘制顺序；未列出的元素按文档顺序追加"
         }
       }
@@ -50,23 +106,66 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": { "type": "boolean", "default": false },
-        "step": { "type": "integer", "minimum": 1, "default": 1 },
-        "hold_ms": { "type": "integer", "minimum": 50, "default": 600 },
-        "dpi": { "type": "integer", "default": 200 },
-        "gif": { "type": "boolean", "default": true }
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "step": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        },
+        "hold_ms": {
+          "type": "integer",
+          "minimum": 50,
+          "default": 600
+        },
+        "dpi": {
+          "type": "integer",
+          "default": 200
+        },
+        "gif": {
+          "type": "boolean",
+          "default": true
+        }
       }
     },
     "swarm": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "enabled": { "type": "boolean", "default": false },
-        "cursors": { "type": "integer", "minimum": 2, "maximum": 30, "default": 8 },
-        "trail": { "type": "integer", "minimum": 0, "maximum": 60, "default": 20 },
-        "mode": { "enum": ["spatial", "follow"], "default": "spatial" },
-        "duration_s": { "type": "number", "minimum": 2, "default": 12 },
-        "presentation_only": { "type": "boolean", "default": true }
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "cursors": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 30,
+          "default": 8
+        },
+        "trail": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 60,
+          "default": 20
+        },
+        "mode": {
+          "enum": [
+            "spatial",
+            "follow"
+          ],
+          "default": "spatial"
+        },
+        "duration_s": {
+          "type": "number",
+          "minimum": 2,
+          "default": 12
+        },
+        "presentation_only": {
+          "type": "boolean",
+          "default": true
+        }
       }
     },
     "output": {
@@ -75,13 +174,37 @@
       "properties": {
         "formats": {
           "type": "array",
-          "items": { "enum": ["svg", "pdf", "png", "tiff"] },
-          "default": ["pdf", "png"]
+          "items": {
+            "enum": [
+              "svg",
+              "pdf",
+              "png",
+              "tiff"
+            ]
+          },
+          "default": [
+            "pdf",
+            "png"
+          ]
         },
-        "dir": { "type": "string" },
-        "dpi": { "type": "integer", "default": 600 },
-        "color_mode": { "enum": ["RGB", "CMYK"], "default": "RGB" },
-        "verify_text": { "type": "boolean", "default": true }
+        "dir": {
+          "type": "string"
+        },
+        "dpi": {
+          "type": "integer",
+          "default": 600
+        },
+        "color_mode": {
+          "enum": [
+            "RGB",
+            "CMYK"
+          ],
+          "default": "RGB"
+        },
+        "verify_text": {
+          "type": "boolean",
+          "default": true
+        }
       }
     },
     "elements": {
@@ -89,16 +212,45 @@
       "minItems": 1,
       "items": {
         "oneOf": [
-          { "$ref": "#/$defs/rect" },
-          { "$ref": "#/$defs/circle" },
-          { "$ref": "#/$defs/line" },
-          { "$ref": "#/$defs/arrow" },
-          { "$ref": "#/$defs/path" },
-          { "$ref": "#/$defs/text" },
-          { "$ref": "#/$defs/image" },
-          { "$ref": "#/$defs/panel" },
-          { "$ref": "#/$defs/data_plot" },
-          { "$ref": "#/$defs/blender_asset" }
+          {
+            "$ref": "#/$defs/rect"
+          },
+          {
+            "$ref": "#/$defs/circle"
+          },
+          {
+            "$ref": "#/$defs/line"
+          },
+          {
+            "$ref": "#/$defs/arrow"
+          },
+          {
+            "$ref": "#/$defs/path"
+          },
+          {
+            "$ref": "#/$defs/text"
+          },
+          {
+            "$ref": "#/$defs/image"
+          },
+          {
+            "$ref": "#/$defs/panel"
+          },
+          {
+            "$ref": "#/$defs/data_plot"
+          },
+          {
+            "$ref": "#/$defs/blender_asset"
+          },
+          {
+            "$ref": "#/$defs/ellipse"
+          },
+          {
+            "$ref": "#/$defs/polygon"
+          },
+          {
+            "$ref": "#/$defs/raw_svg"
+          }
         ]
       }
     }
@@ -107,11 +259,18 @@
     "placement": {
       "type": "object",
       "properties": {
-        "x_mm": { "type": "number" },
-        "y_mm": { "type": "number" },
+        "x_mm": {
+          "type": "number"
+        },
+        "y_mm": {
+          "type": "number"
+        },
         "cell": {
           "type": "array",
-          "items": { "type": "integer", "minimum": 0 },
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
           "minItems": 2,
           "maxItems": 2,
           "description": "[row, col]，grid 布局时使用"
@@ -120,202 +279,846 @@
     },
     "rect": {
       "type": "object",
-      "required": ["id", "type", "w_mm", "h_mm"],
+      "required": [
+        "id",
+        "type",
+        "w_mm",
+        "h_mm"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
-        "type": { "const": "rect" },
-        "x_mm": { "type": "number" },
-        "y_mm": { "type": "number" },
-        "w_mm": { "type": "number", "exclusiveMinimum": 0 },
-        "h_mm": { "type": "number", "exclusiveMinimum": 0 },
-        "cell": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 2, "maxItems": 2 },
-        "fill": { "type": "string" },
-        "stroke": { "type": "string" },
-        "stroke_pt": { "type": "number", "minimum": 0 },
-        "rx": { "type": "number", "minimum": 0 },
-        "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "rect"
+        },
+        "x_mm": {
+          "type": "number"
+        },
+        "y_mm": {
+          "type": "number"
+        },
+        "w_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "h_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "cell": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "fill": {
+          "type": "string"
+        },
+        "stroke": {
+          "type": "string"
+        },
+        "stroke_pt": {
+          "type": "number",
+          "minimum": 0
+        },
+        "rx": {
+          "type": "number",
+          "minimum": 0
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "rotation_deg": {
+          "type": "number",
+          "description": "绕元素中心的旋转角（度）"
+        },
+        "rotate_about_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "旋转中心，缺省为元素包围盒中心（text 为锚点）"
+        }
       }
     },
     "circle": {
       "type": "object",
-      "required": ["id", "type", "r_mm"],
+      "required": [
+        "id",
+        "type",
+        "r_mm"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
-        "type": { "const": "circle" },
-        "cx_mm": { "type": "number" },
-        "cy_mm": { "type": "number" },
-        "r_mm": { "type": "number", "exclusiveMinimum": 0 },
-        "cell": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 2, "maxItems": 2 },
-        "fill": { "type": "string" },
-        "stroke": { "type": "string" },
-        "stroke_pt": { "type": "number", "minimum": 0 }
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "circle"
+        },
+        "cx_mm": {
+          "type": "number"
+        },
+        "cy_mm": {
+          "type": "number"
+        },
+        "r_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "cell": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "fill": {
+          "type": "string"
+        },
+        "stroke": {
+          "type": "string"
+        },
+        "stroke_pt": {
+          "type": "number",
+          "minimum": 0
+        },
+        "rotation_deg": {
+          "type": "number",
+          "description": "绕元素中心的旋转角（度）"
+        },
+        "rotate_about_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "旋转中心，缺省为元素包围盒中心（text 为锚点）"
+        }
       }
     },
     "line": {
       "type": "object",
-      "required": ["id", "type", "x1_mm", "y1_mm", "x2_mm", "y2_mm"],
+      "required": [
+        "id",
+        "type",
+        "x1_mm",
+        "y1_mm",
+        "x2_mm",
+        "y2_mm"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
-        "type": { "const": "line" },
-        "x1_mm": { "type": "number" },
-        "y1_mm": { "type": "number" },
-        "x2_mm": { "type": "number" },
-        "y2_mm": { "type": "number" },
-        "stroke": { "type": "string" },
-        "stroke_pt": { "type": "number", "minimum": 0 },
-        "dash": { "type": "string" }
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "line"
+        },
+        "x1_mm": {
+          "type": "number"
+        },
+        "y1_mm": {
+          "type": "number"
+        },
+        "x2_mm": {
+          "type": "number"
+        },
+        "y2_mm": {
+          "type": "number"
+        },
+        "stroke": {
+          "type": "string"
+        },
+        "stroke_pt": {
+          "type": "number",
+          "minimum": 0
+        },
+        "dash": {
+          "type": "string"
+        }
       }
     },
     "arrow": {
       "type": "object",
-      "required": ["id", "type", "x1_mm", "y1_mm", "x2_mm", "y2_mm"],
+      "required": [
+        "id",
+        "type",
+        "x1_mm",
+        "y1_mm",
+        "x2_mm",
+        "y2_mm"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
-        "type": { "const": "arrow" },
-        "x1_mm": { "type": "number" },
-        "y1_mm": { "type": "number" },
-        "x2_mm": { "type": "number" },
-        "y2_mm": { "type": "number" },
-        "cx_mm": { "type": "number", "description": "二次贝塞尔控制点，存在则画曲线箭头" },
-        "cy_mm": { "type": "number" },
-        "stroke": { "type": "string" },
-        "stroke_pt": { "type": "number", "minimum": 0 },
-        "dash": { "type": "string" }
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "arrow"
+        },
+        "x1_mm": {
+          "type": "number"
+        },
+        "y1_mm": {
+          "type": "number"
+        },
+        "x2_mm": {
+          "type": "number"
+        },
+        "y2_mm": {
+          "type": "number"
+        },
+        "cx_mm": {
+          "type": "number",
+          "description": "二次贝塞尔控制点，存在则画曲线箭头"
+        },
+        "cy_mm": {
+          "type": "number"
+        },
+        "stroke": {
+          "type": "string"
+        },
+        "stroke_pt": {
+          "type": "number",
+          "minimum": 0
+        },
+        "dash": {
+          "type": "string"
+        }
       }
     },
     "path": {
       "type": "object",
-      "required": ["id", "type", "d"],
+      "required": [
+        "id",
+        "type",
+        "d"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
-        "type": { "const": "path" },
-        "d": { "type": "string" },
-        "fill": { "type": "string" },
-        "stroke": { "type": "string" },
-        "stroke_pt": { "type": "number", "minimum": 0 },
-        "dash": { "type": "string" }
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "path"
+        },
+        "d": {
+          "type": "string"
+        },
+        "fill": {
+          "type": "string"
+        },
+        "stroke": {
+          "type": "string"
+        },
+        "stroke_pt": {
+          "type": "number",
+          "minimum": 0
+        },
+        "dash": {
+          "type": "string"
+        },
+        "rotation_deg": {
+          "type": "number",
+          "description": "绕元素中心的旋转角（度）"
+        },
+        "rotate_about_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "旋转中心，缺省为元素包围盒中心（text 为锚点）"
+        }
       }
     },
     "text": {
       "type": "object",
-      "required": ["id", "type"],
+      "required": [
+        "id",
+        "type"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
-        "type": { "const": "text" },
-        "x_mm": { "type": "number" },
-        "y_mm": { "type": "number" },
-        "cell": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 2, "maxItems": 2 },
-        "content": { "type": "string" },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "text"
+        },
+        "x_mm": {
+          "type": "number"
+        },
+        "y_mm": {
+          "type": "number"
+        },
+        "cell": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "content": {
+          "type": "string"
+        },
         "runs": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["t"],
+            "required": [
+              "t"
+            ],
             "additionalProperties": false,
             "properties": {
-              "t": { "type": "string" },
-              "sub": { "type": "boolean" },
-              "sup": { "type": "boolean" },
-              "bold": { "type": "boolean" }
+              "t": {
+                "type": "string"
+              },
+              "sub": {
+                "type": "boolean"
+              },
+              "sup": {
+                "type": "boolean"
+              },
+              "bold": {
+                "type": "boolean"
+              }
             }
           }
         },
-        "size_pt": { "type": "number", "exclusiveMinimum": 0 },
-        "fill": { "type": "string" },
-        "anchor": { "enum": ["start", "middle", "end"] },
-        "weight": { "enum": ["normal", "bold"] }
+        "size_pt": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "fill": {
+          "type": "string"
+        },
+        "anchor": {
+          "enum": [
+            "start",
+            "middle",
+            "end"
+          ]
+        },
+        "weight": {
+          "enum": [
+            "normal",
+            "bold"
+          ]
+        },
+        "rotation_deg": {
+          "type": "number",
+          "description": "绕元素中心的旋转角（度）"
+        },
+        "rotate_about_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "旋转中心，缺省为元素包围盒中心（text 为锚点）"
+        }
       },
-      "oneOf": [{ "required": ["content"] }, { "required": ["runs"] }]
+      "oneOf": [
+        {
+          "required": [
+            "content"
+          ]
+        },
+        {
+          "required": [
+            "runs"
+          ]
+        }
+      ]
     },
     "image": {
       "type": "object",
-      "required": ["id", "type", "src", "w_mm"],
+      "required": [
+        "id",
+        "type",
+        "src",
+        "w_mm"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
-        "type": { "const": "image" },
-        "src": { "type": "string" },
-        "x_mm": { "type": "number" },
-        "y_mm": { "type": "number" },
-        "w_mm": { "type": "number", "exclusiveMinimum": 0 },
-        "h_mm": { "type": "number", "exclusiveMinimum": 0 },
-        "cell": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 2, "maxItems": 2 },
-        "embed": { "type": "boolean", "default": false },
-        "label": { "type": "string" },
-        "label_pt": { "type": "number", "exclusiveMinimum": 0 }
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "image"
+        },
+        "src": {
+          "type": "string"
+        },
+        "x_mm": {
+          "type": "number"
+        },
+        "y_mm": {
+          "type": "number"
+        },
+        "w_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "h_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "cell": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "embed": {
+          "type": "boolean",
+          "default": false
+        },
+        "label": {
+          "type": "string"
+        },
+        "label_pt": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "rotation_deg": {
+          "type": "number",
+          "description": "绕元素中心的旋转角（度）"
+        },
+        "rotate_about_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "旋转中心，缺省为元素包围盒中心（text 为锚点）"
+        }
       }
     },
     "panel": {
       "type": "object",
-      "required": ["id", "type", "src", "w_mm"],
+      "required": [
+        "id",
+        "type",
+        "src",
+        "w_mm"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
-        "type": { "const": "panel" },
-        "src": { "type": "string", "description": "SVG 直接嵌入；PDF/EPS 先经 Inkscape 转 SVG" },
-        "x_mm": { "type": "number" },
-        "y_mm": { "type": "number" },
-        "w_mm": { "type": "number", "exclusiveMinimum": 0 },
-        "h_mm": { "type": "number", "exclusiveMinimum": 0 },
-        "cell": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 2, "maxItems": 2 },
-        "label": { "type": "string", "description": "面板字母 a/b/c" },
-        "label_pt": { "type": "number", "exclusiveMinimum": 0 }
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "panel"
+        },
+        "src": {
+          "type": "string",
+          "description": "SVG 直接嵌入；PDF/EPS 先经 Inkscape 转 SVG"
+        },
+        "x_mm": {
+          "type": "number"
+        },
+        "y_mm": {
+          "type": "number"
+        },
+        "w_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "h_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "cell": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "label": {
+          "type": "string",
+          "description": "面板字母 a/b/c"
+        },
+        "label_pt": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "rotation_deg": {
+          "type": "number",
+          "description": "绕元素中心的旋转角（度）"
+        },
+        "rotate_about_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "旋转中心，缺省为元素包围盒中心（text 为锚点）"
+        }
       }
     },
     "data_plot": {
       "type": "object",
-      "required": ["id", "type", "csv", "x", "y", "w_mm"],
+      "required": [
+        "id",
+        "type",
+        "csv",
+        "x",
+        "y",
+        "w_mm"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
-        "type": { "const": "data_plot" },
-        "csv": { "type": "string" },
-        "x": { "type": "string" },
-        "y": { "type": "string" },
-        "kind": { "enum": ["line", "scatter", "bar"], "default": "line" },
-        "log_y": { "type": "boolean", "default": false },
-        "xlabel": { "type": "string" },
-        "ylabel": { "type": "string" },
-        "color": { "type": "string" },
-        "label": { "type": "string", "description": "面板字母 a/b/c" },
-        "label_pt": { "type": "number", "exclusiveMinimum": 0 },
-        "x_mm": { "type": "number" },
-        "y_mm": { "type": "number" },
-        "w_mm": { "type": "number", "exclusiveMinimum": 0 },
-        "h_mm": { "type": "number", "exclusiveMinimum": 0 },
-        "cell": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 2, "maxItems": 2 }
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "data_plot"
+        },
+        "csv": {
+          "type": "string"
+        },
+        "x": {
+          "type": "string"
+        },
+        "y": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "line",
+            "scatter",
+            "bar"
+          ],
+          "default": "line"
+        },
+        "log_y": {
+          "type": "boolean",
+          "default": false
+        },
+        "xlabel": {
+          "type": "string"
+        },
+        "ylabel": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string",
+          "description": "面板字母 a/b/c"
+        },
+        "label_pt": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "x_mm": {
+          "type": "number"
+        },
+        "y_mm": {
+          "type": "number"
+        },
+        "w_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "h_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "cell": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
       }
     },
     "blender_asset": {
       "type": "object",
-      "required": ["id", "type", "asset_dir", "w_mm"],
+      "required": [
+        "id",
+        "type",
+        "asset_dir",
+        "w_mm"
+      ],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$" },
-        "type": { "const": "blender_asset" },
-        "asset_dir": { "type": "string" },
-        "build": { "type": "string", "default": "build.py" },
-        "renderer": { "enum": ["auto", "server", "local", "mock"], "default": "auto" },
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "blender_asset"
+        },
+        "asset_dir": {
+          "type": "string"
+        },
+        "build": {
+          "type": "string",
+          "default": "build.py"
+        },
+        "renderer": {
+          "enum": [
+            "auto",
+            "server",
+            "local",
+            "mock"
+          ],
+          "default": "auto"
+        },
         "resolution": {
           "type": "array",
-          "items": { "type": "integer", "exclusiveMinimum": 0 },
+          "items": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
           "minItems": 2,
           "maxItems": 2,
-          "default": [1600, 1200]
+          "default": [
+            1600,
+            1200
+          ]
         },
-        "samples": { "type": "integer", "minimum": 1 },
-        "label": { "type": "string" },
-        "label_pt": { "type": "number", "exclusiveMinimum": 0 },
-        "x_mm": { "type": "number" },
-        "y_mm": { "type": "number" },
-        "w_mm": { "type": "number", "exclusiveMinimum": 0 },
-        "cell": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 2, "maxItems": 2 }
+        "samples": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "label_pt": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "x_mm": {
+          "type": "number"
+        },
+        "y_mm": {
+          "type": "number"
+        },
+        "w_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "cell": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      }
+    },
+    "ellipse": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "rx_mm",
+        "ry_mm"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "ellipse"
+        },
+        "cx_mm": {
+          "type": "number"
+        },
+        "cy_mm": {
+          "type": "number"
+        },
+        "rx_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "ry_mm": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "fill": {
+          "type": "string"
+        },
+        "stroke": {
+          "type": "string"
+        },
+        "stroke_pt": {
+          "type": "number",
+          "minimum": 0
+        },
+        "dash": {
+          "type": "string"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "rotation_deg": {
+          "type": "number",
+          "description": "绕元素中心的旋转角（度）"
+        },
+        "rotate_about_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "旋转中心，缺省为元素包围盒中心（text 为锚点）"
+        }
+      }
+    },
+    "polygon": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "points_mm"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "polygon"
+        },
+        "points_mm": {
+          "type": "array",
+          "minItems": 3,
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "fill": {
+          "type": "string"
+        },
+        "stroke": {
+          "type": "string"
+        },
+        "stroke_pt": {
+          "type": "number",
+          "minimum": 0
+        },
+        "dash": {
+          "type": "string"
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "rotation_deg": {
+          "type": "number",
+          "description": "绕元素中心的旋转角（度）"
+        },
+        "rotate_about_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "旋转中心，缺省为元素包围盒中心（text 为锚点）"
+        }
+      }
+    },
+    "raw_svg": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "svg"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+        },
+        "type": {
+          "const": "raw_svg"
+        },
+        "svg": {
+          "type": "string",
+          "description": "内联 SVG 片段（不含 <svg> 外壳）"
+        },
+        "x_mm": {
+          "type": "number"
+        },
+        "y_mm": {
+          "type": "number"
+        },
+        "scale": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "rotation_deg": {
+          "type": "number",
+          "description": "绕元素中心的旋转角（度）"
+        },
+        "rotate_about_mm": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "旋转中心，缺省为元素包围盒中心（text 为锚点）"
+        }
       }
     }
   }

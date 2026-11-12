@@ -3,21 +3,25 @@
 
 from __future__ import annotations
 
+import copy
 import csv
 from pathlib import Path
 from typing import Any
+
+from lxml import etree
 
 from osda_render import backends
 from osda_render.config import load_config
 from osda_render.meta import MetaError, load_meta
 from osda_vector import Canvas, export, verify_svg
-from osda_vector.compose import place_svg
+from osda_vector.compose import namespace_ids, place_svg
 from osda_vector.export import convert_to_svg
+from osda_vector.svg import SVG_NS
 from osda_vector.verify import (check_pdf_fonts, check_png_dpi, check_text_present,
                                 convert_tiff)
 
 from .layout import apply_layout
-from .spec import ordered_elements, resolve_backend, SpecError
+from .spec import SpecError, _bbox, ordered_elements, resolve_backend
 
 DEFAULT_TEXT_PT = 7.0
 
@@ -175,6 +179,23 @@ def prepare_elements(spec: dict[str, Any], workdir: Path,
     return resolved
 
 
+def _rotation_transform(el: dict[str, Any]) -> str | None:
+    deg = el.get("rotation_deg")
+    if not deg:
+        return None
+    if "rotate_about_mm" in el:
+        cx, cy = el["rotate_about_mm"]
+    else:
+        bbox = _bbox(el)
+        if bbox and bbox[2] and bbox[3]:
+            cx, cy = bbox[0] + bbox[2] / 2, bbox[1] + bbox[3] / 2
+        elif el["type"] == "text":
+            cx, cy = el["x_mm"], el["y_mm"]
+        else:
+            cx, cy = 0.0, 0.0
+    return f"rotate({deg:g} {cx:g} {cy:g})"
+
+
 def build_canvas(spec: dict[str, Any], elements: list[dict[str, Any]],
                  limit: int | None = None,
                  font_family: str | None = None) -> Canvas:
@@ -186,9 +207,11 @@ def build_canvas(spec: dict[str, Any], elements: list[dict[str, Any]],
                     font_family=font_family or spec["journal"]["font_family"])
     drawn = elements if limit is None else elements[:limit]
     for i, el in enumerate(drawn):
-        # 每个元素包一层 g，便于 progressive 与 swarm 按元素动画
-        group = etree.SubElement(canvas.layer, f"{{{SVG_NS}}}g",
-                                 {"id": f"el_{el['id']}"})
+        attrs = {"id": f"el_{el['id']}"}
+        transform = _rotation_transform(el)
+        if transform:
+            attrs["transform"] = transform
+        group = etree.SubElement(canvas.layer, f"{{{SVG_NS}}}g", attrs)
         outer = canvas.layer
         canvas.layer = group
         try:
@@ -209,6 +232,11 @@ def _draw(canvas: Canvas, el: dict[str, Any], prefix: str) -> None:
         canvas.circle(el["cx_mm"], el["cy_mm"], el["r_mm"],
                       fill=el.get("fill", "#FFFFFF"), stroke=el.get("stroke", "none"),
                       stroke_pt=el.get("stroke_pt", 0.5))
+    elif kind == "ellipse":
+        canvas.ellipse(el["cx_mm"], el["cy_mm"], el["rx_mm"], el["ry_mm"],
+                       fill=el.get("fill", "#FFFFFF"), stroke=el.get("stroke", "none"),
+                       stroke_pt=el.get("stroke_pt", 0.5), dash=el.get("dash"),
+                       opacity=el.get("opacity", 1.0))
     elif kind == "line":
         canvas.line(el["x1_mm"], el["y1_mm"], el["x2_mm"], el["y2_mm"],
                     stroke=el.get("stroke", "#000000"),
@@ -225,6 +253,13 @@ def _draw(canvas: Canvas, el: dict[str, Any], prefix: str) -> None:
                         stroke=el.get("stroke", "#000000"),
                         stroke_pt=el.get("stroke_pt", 0.75),
                         dash=el.get("dash"), arrow=True)
+    elif kind == "polygon":
+        canvas.polygon([tuple(p) for p in el["points_mm"]],
+                       fill=el.get("fill", "#FFFFFF"), stroke=el.get("stroke", "none"),
+                       stroke_pt=el.get("stroke_pt", 0.5), dash=el.get("dash"),
+                       opacity=el.get("opacity", 1.0))
+    elif kind == "raw_svg":
+        _draw_raw_svg(canvas, el, prefix)
     elif kind == "path":
         canvas.path(el["d"], fill=el.get("fill", "none"),
                     stroke=el.get("stroke", "#000000"),
@@ -254,6 +289,30 @@ def _draw(canvas: Canvas, el: dict[str, Any], prefix: str) -> None:
         canvas.text(float(el.get("x_mm", 0)),
                     top - 1.2 if above else top + size * 0.4 + 0.8,
                     el["label"], size_pt=size, weight="bold")
+
+
+def _draw_raw_svg(canvas: Canvas, el: dict[str, Any], prefix: str) -> None:
+    root = etree.fromstring(f'<svg xmlns="{SVG_NS}">{el["svg"]}</svg>')
+    x = float(el.get("x_mm", 0) or 0)
+    y = float(el.get("y_mm", 0) or 0)
+    scale = float(el.get("scale", 1) or 1)
+    group = etree.SubElement(canvas.layer, f"{{{SVG_NS}}}g", {
+        "transform": f"translate({x:g},{y:g}) scale({scale:g})",
+    })
+    for child in root:
+        group.append(copy.deepcopy(child))
+    namespace_ids(group, f"{prefix}{el['id']}_")
+
+
+def _raw_svg_texts(el: dict[str, Any]) -> list[str]:
+    root = etree.fromstring(f'<svg xmlns="{SVG_NS}">{el["svg"]}</svg>')
+    texts: list[str] = []
+    for node in root.iter():
+        if isinstance(node.tag, str) and node.tag.rsplit("}", 1)[-1] == "text":
+            text = "".join(node.itertext()).strip()
+            if text:
+                texts.append(text)
+    return texts
 
 
 def _element_text(el: dict[str, Any]) -> str:
@@ -304,8 +363,14 @@ def render_scene(spec: dict[str, Any], outdir: str | Path, *,
             f"导出 DPI {dpi} 低于 journal.dpi 要求 {journal_dpi}，印刷可能不达标")
     checks: dict[str, Any] = {}
     if spec["output"].get("verify_text", True):
-        expected = [_element_text(el) for el in elements if el["type"] == "text"]
-        expected = [t for t in expected if t]
+        expected: list[str] = []
+        for el in elements:
+            if el["type"] == "text":
+                text = _element_text(el)
+                if text:
+                    expected.append(text)
+            elif el["type"] == "raw_svg":
+                expected.extend(_raw_svg_texts(el))
         missing = check_text_present(svg, expected) if expected else []
         checks["text_missing"] = missing
         if missing:

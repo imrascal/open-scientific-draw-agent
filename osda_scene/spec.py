@@ -11,7 +11,12 @@ import json
 from pathlib import Path
 from typing import Any
 
+from lxml import etree
+
 SCHEMA_PATH = Path(__file__).resolve().parent / "schema" / "scene.schema.json"
+SVG_NS = "http://www.w3.org/2000/svg"
+FORBIDDEN_SVG_TAGS = {"script", "foreignobject", "iframe", "object", "embed",
+                      "style", "animate", "set"}
 
 DEFAULTS = {
     "backend": "auto",
@@ -123,6 +128,16 @@ def _validate_semantics(spec: dict[str, Any], base: Path) -> None:
             asset = (base / el["asset_dir"]).resolve()
             if not asset.is_dir():
                 raise SpecError(f"元素 {el['id']} 的 asset_dir 不存在: {asset}")
+        elif kind == "raw_svg":
+            _check_raw_svg(el)
+
+        if "rotation_deg" in el and not isinstance(el["rotation_deg"], (int, float)):
+            raise SpecError(f"元素 {el['id']} 的 rotation_deg 必须是数字")
+        if "rotate_about_mm" in el:
+            pivot = el["rotate_about_mm"]
+            if (not isinstance(pivot, list) or len(pivot) != 2
+                    or not all(isinstance(v, (int, float)) for v in pivot)):
+                raise SpecError(f"元素 {el['id']} 的 rotate_about_mm 必须是 [x, y]")
 
         # grid 布局下坐标由 apply_layout 生成，这一步还没有，跳过 bbox
         if grid and "cell" in el and "x_mm" not in el:
@@ -147,6 +162,31 @@ def _require_file(rel: str, base: Path, element_id: str) -> None:
         raise SpecError(f"元素 {element_id} 引用的文件不存在: {path}")
 
 
+def _check_raw_svg(el: dict) -> None:
+    """内联片段只允许静态、自包含的 SVG。"""
+    fragment = el.get("svg", "")
+    eid = el["id"]
+    try:
+        root = etree.fromstring(f'<svg xmlns="{SVG_NS}">{fragment}</svg>')
+    except etree.XMLSyntaxError as exc:
+        raise SpecError(f"raw_svg {eid} 不是合法 SVG 片段: {exc}") from exc
+
+    for node in root.iter():
+        if not isinstance(node.tag, str):
+            continue
+        tag = node.tag.rsplit("}", 1)[-1].lower()
+        if tag in FORBIDDEN_SVG_TAGS:
+            raise SpecError(f"raw_svg {eid} 含不允许的标签 <{tag}>")
+        for attr, value in node.attrib.items():
+            name = attr.rsplit("}", 1)[-1].lower()
+            if name.startswith("on"):
+                raise SpecError(f"raw_svg {eid} 含事件属性 {name}")
+            if name in ("href", "src") and value and not value.startswith(("#", "data:")):
+                raise SpecError(f"raw_svg {eid} 只允许 # 引用或 data: URI，收到 {value[:40]}")
+            if name == "style" and "url(" in value and "url(#" not in value:
+                raise SpecError(f"raw_svg {eid} 的 style 含外部 url() 引用")
+
+
 def _bbox(el: dict) -> tuple[float, float, float, float] | None:
     kind = el["type"]
     if kind == "rect":
@@ -158,6 +198,20 @@ def _bbox(el: dict) -> tuple[float, float, float, float] | None:
             return None
         return (el["cx_mm"] - el["r_mm"], el["cy_mm"] - el["r_mm"],
                 2 * el["r_mm"], 2 * el["r_mm"])
+    if kind == "ellipse":
+        if not all(k in el for k in ("cx_mm", "cy_mm", "rx_mm", "ry_mm")):
+            return None
+        return (el["cx_mm"] - el["rx_mm"], el["cy_mm"] - el["ry_mm"],
+                2 * el["rx_mm"], 2 * el["ry_mm"])
+    if kind == "polygon":
+        points = el.get("points_mm")
+        if not points:
+            return None
+        xs = [p[0] for p in points]
+        ys = [p[1] for p in points]
+        return min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys)
+    if kind == "raw_svg":
+        return el.get("x_mm", 0) or 0, el.get("y_mm", 0) or 0, 0, 0
     if kind in ("line", "arrow"):
         if not all(k in el for k in ("x1_mm", "y1_mm", "x2_mm", "y2_mm")):
             return None

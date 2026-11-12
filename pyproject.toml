@@ -1,6 +1,6 @@
 [project]
 name = "osda-render"
-version = "0.2.0"
+version = "0.3.0"
 description = "OSDA 的可视化套件：Scene Spec + 矢量绘制 + Blender 渲染桥接"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -29,3 +29,4 @@ include-package-data = true
 
 [tool.setuptools.package-data]
 osda_scene = ["schema/*.json"]
+

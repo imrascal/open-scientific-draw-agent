@@ -62,7 +62,9 @@ Schema 在 [`schema/scene.schema.json`](schema/scene.schema.json)（JSON Schema 
 
 | 能力 | 说明 |
 |---|---|
-| 元素类型 | `rect` / `circle` / `line` / `arrow` / `path` / `text` / `image` / `panel` / `data_plot` / `blender_asset` |
+| 元素类型 | `rect` / `circle` / `ellipse` / `polygon` / `line` / `arrow` / `path` / `text` / `image` / `panel` / `data_plot` / `blender_asset` / `raw_svg` |
+| 旋转 | 任意元素可加 `rotation_deg`，默认绕包围盒中心（text 为锚点），也可用 `rotate_about_mm` 指定支点 |
+| 逃生舱 | `raw_svg` 内联静态 SVG 片段，自动加 id 前缀；拒绝 script、事件属性、外部 href，片段内文字纳入完整性检查 |
 | 布局 | `free`（给坐标）或 `grid`（给 `cell: [row, col]`，自动算单元格） |
 | 后端 | `auto` 自动判断，也可显式 `inkscape` / `matplotlib` / `blender` / `composite` |
 | 外部面板 | `panel` 支持 SVG 直接嵌入、PDF/EPS 自动经 Inkscape 转 SVG（Origin 导出可用） |

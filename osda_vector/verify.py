@@ -72,7 +72,7 @@ def verify_svg(path: str | Path, *, expected_size_mm: tuple[float, float] | None
             else:
                 warnings.append("存在未声明 font-size 的 text")
 
-        if name in ("rect", "circle", "line", "polygon", "path"):
+        if name in ("rect", "circle", "ellipse", "line", "polygon", "path"):
             stroke = el.get("stroke")
             if stroke and stroke != "none":
                 raw = el.get("stroke-width", "1")
