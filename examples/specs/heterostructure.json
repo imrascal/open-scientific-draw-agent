@@ -29,9 +29,11 @@
       "fill": "#E8C547", "stroke": "#B8960F", "stroke_pt": 0.5 },
     { "id": "hbn_top", "type": "rect", "x_mm": 24, "y_mm": 26.5, "w_mm": 12, "h_mm": 2.5,
       "fill": "#C9D6E8", "stroke": "#333333", "stroke_pt": 0.5 },
-    { "id": "source", "type": "rect", "x_mm": 8, "y_mm": 29, "w_mm": 14, "h_mm": 8,
+    { "id": "source", "type": "path",
+      "d": "M 8 29 L 21 29 L 21 31.5 L 17 31.5 L 17 34 L 14 34 L 14 37 L 8 37 Z",
       "fill": "#C9A227", "stroke": "#8A6D12", "stroke_pt": 0.5 },
-    { "id": "drain", "type": "rect", "x_mm": 38, "y_mm": 29, "w_mm": 14, "h_mm": 8,
+    { "id": "drain", "type": "path",
+      "d": "M 39 29 L 52 29 L 52 37 L 47 37 L 47 34 L 43 34 L 43 31.5 L 39 31.5 Z",
       "fill": "#C9A227", "stroke": "#8A6D12", "stroke_pt": 0.5 },
 
     { "id": "lead_top", "type": "line", "x1_mm": 56, "y1_mm": 27.75, "x2_mm": 62, "y2_mm": 26.5,
@@ -61,7 +63,7 @@
       "content": "Si substrate", "size_pt": 7 },
     { "id": "lbl_au_l", "type": "text", "x_mm": 9.4, "y_mm": 35.2,
       "content": "Au", "size_pt": 7, "fill": "#FFFFFF", "weight": "bold" },
-    { "id": "lbl_au_r", "type": "text", "x_mm": 47.0, "y_mm": 35.2,
+    { "id": "lbl_au_r", "type": "text", "x_mm": 48.0, "y_mm": 35.2,
       "content": "Au", "size_pt": 7, "fill": "#FFFFFF", "weight": "bold" },
 
     { "id": "title", "type": "text", "x_mm": 8, "y_mm": 10,

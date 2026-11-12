@@ -163,33 +163,40 @@ class TestCompose(unittest.TestCase):
 
 
 class TestExampleGeometry(unittest.TestCase):
-    """示例器件必须让源漏电极与二维半导体层直接接触，不能只是贴近或留缝。"""
+    """电极轮廓必须沿 WSe2/MoS2/底部 hBN 的台阶共形贴合，不能覆盖材料顶面。"""
 
-    def test_electrodes_overlap_2d_layers(self):
+    def _polygon(self, canvas, element_id):
+        for el in canvas.layer.iter():
+            if el.get("id") == element_id:
+                self.assertTrue(
+                    isinstance(el.tag, str) and el.tag.endswith("polygon"),
+                    f"{element_id} 应该是 polygon",
+                )
+                return [tuple(float(v) for v in point.split(","))
+                        for point in el.get("points").split()]
+        self.fail(f"找不到元素 {element_id}")
+
+    def _edges(self, points):
+        return {frozenset((a, b)) for a, b in zip(points, points[1:] + points[:1])}
+
+    def test_electrodes_conform_to_stack_profile(self):
         from examples import fig_stack
 
         canvas = fig_stack.build()
-        rects = {}
-        for el in canvas.layer.iter():
-            element_id = el.get("id")
-            if element_id in {"source", "drain", "mos2", "wse2"}:
-                rects[element_id] = tuple(
-                    float(el.get(key)) for key in ("x", "y", "width", "height")
-                )
-        self.assertEqual(set(rects), {"source", "drain", "mos2", "wse2"})
+        source_edges = self._edges(self._polygon(canvas, "source"))
+        drain_edges = self._edges(self._polygon(canvas, "drain"))
 
-        def overlaps(a, b):
-            ax, ay, aw, ah = a
-            bx, by, bw, bh = b
-            return (min(ax + aw, bx + bw) > max(ax, bx)
-                    and min(ay + ah, by + bh) > max(ay, by))
+        # 左侧电极：分别贴住 WSe2、MoS2、底部 hBN 的左边缘
+        for a, b in (((21, 29), (21, 31.5)),      # WSe2
+                     ((17, 31.5), (17, 34)),      # MoS2
+                     ((14, 34), (14, 37))):       # hBN
+            self.assertIn(frozenset((a, b)), source_edges)
 
-        for electrode in ("source", "drain"):
-            for layer in ("wse2", "mos2"):
-                self.assertTrue(
-                    overlaps(rects[electrode], rects[layer]),
-                    f"{electrode} 必须与 {layer} 有实际重叠（直接接触）",
-                )
+        # 右侧电极：分别贴住三层右边缘
+        for a, b in (((39, 29), (39, 31.5)),      # WSe2
+                     ((43, 31.5), (43, 34)),      # MoS2
+                     ((47, 34), (47, 37))):       # hBN
+            self.assertIn(frozenset((a, b)), drain_edges)
 
 
 if __name__ == "__main__":

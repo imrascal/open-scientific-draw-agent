@@ -5,9 +5,9 @@
 
 > **English**: OSDA turns a declarative JSON scene into editable vector figures (SVG/PDF) and, when needed, 3D assets rendered by Blender. It targets publication-quality scientific figures: millimetre-accurate layout, journal checks, multi-panel composition, progressive GIF and a build replay. Vector export needs Inkscape; 3D is optional.
 
-![example panel](docs/preview.png)
+![example panel](docs/preview.png?v=20261112b)
 
-![build replay](docs/preview.gif)
+![build replay](docs/preview.gif?v=20261112b)
 
 三个子系统，职责分开：
 

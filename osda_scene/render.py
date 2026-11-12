@@ -228,7 +228,8 @@ def _draw(canvas: Canvas, el: dict[str, Any], prefix: str) -> None:
     elif kind == "path":
         canvas.path(el["d"], fill=el.get("fill", "none"),
                     stroke=el.get("stroke", "#000000"),
-                    stroke_pt=el.get("stroke_pt", 0.75), dash=el.get("dash"))
+                    stroke_pt=el.get("stroke_pt", 0.75), dash=el.get("dash"),
+                    element_id=prefix + el["id"])
     elif kind == "text":
         size = el.get("size_pt", DEFAULT_TEXT_PT)
         canvas.text(el["x_mm"], el["y_mm"], el.get("content", ""),

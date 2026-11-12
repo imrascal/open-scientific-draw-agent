@@ -70,19 +70,26 @@ class Canvas:
         })
 
     def polygon(self, points: Sequence[tuple[float, float]], *,
-                fill: str = "#FFFFFF", stroke: str = "none", stroke_pt: float = 0.5):
-        return etree.SubElement(self.layer, f"{{{SVG_NS}}}polygon", {
+                fill: str = "#FFFFFF", stroke: str = "none", stroke_pt: float = 0.5,
+                element_id: str | None = None):
+        attrs = {
             "points": " ".join(f"{x:g},{y:g}" for x, y in points),
             "fill": fill, "stroke": stroke,
             "stroke-width": f"{stroke_pt * PT2MM:g}",
-        })
+        }
+        if element_id:
+            attrs["id"] = element_id
+        return etree.SubElement(self.layer, f"{{{SVG_NS}}}polygon", attrs)
 
     def path(self, d: str, *, fill: str = "none", stroke: str = "#000000",
-             stroke_pt: float = 0.75, dash: str | None = None):
+             stroke_pt: float = 0.75, dash: str | None = None,
+             element_id: str | None = None):
         attrs = {"d": d, "fill": fill, "stroke": stroke,
                  "stroke-width": f"{stroke_pt * PT2MM:g}"}
         if dash:
             attrs["stroke-dasharray"] = dash
+        if element_id:
+            attrs["id"] = element_id
         return etree.SubElement(self.layer, f"{{{SVG_NS}}}path", attrs)
 
     def line(self, x1: float, y1: float, x2: float, y2: float, *,
