@@ -187,6 +187,16 @@ class TestGridLayout(unittest.TestCase):
 
 
 class TestRender(unittest.TestCase):
+    def test_low_output_dpi_warns_against_journal_requirement(self):
+        """journal.dpi 是期刊要求，导出 DPI 低于它时必须给出 warning。"""
+        with tempfile.TemporaryDirectory() as tmp:
+            spec = _spec([RECT, TEXT], journal={"font_family": "Arial",
+                                                "min_font_pt": 7,
+                                                "min_stroke_pt": 0.5, "dpi": 600})
+            out = Path(tmp) / "out"
+            result = render_scene(spec, out, formats=("svg",), dpi=150)
+            self.assertTrue(any("journal.dpi" in w for w in result["report"]["warnings"]))
+
     @unittest.skipUnless(HAS_INKSCAPE, "未安装 Inkscape")
     def test_render_vector_and_tiff(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -272,6 +282,37 @@ class TestRender(unittest.TestCase):
             result = render_scene(spec, base / "out", dpi=150)
             self.assertTrue(result["ok"], result["report"]["errors"])
             self.assertGreater(Path(result["files"]["pdf"]).stat().st_size, 0)
+
+
+class TestSwarmOptions(unittest.TestCase):
+    """swarm.trail / presentation_only 是文档化字段，必须真的生效。"""
+
+    def _html(self, tmp, **swarm):
+        data = _spec([RECT, TEXT], swarm={"enabled": True, "cursors": 3,
+                                          "duration_s": 3, **swarm})
+        path = Path(tmp) / "s.json"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        spec = load_spec(path)
+        spec["_base"] = tmp
+        apply_layout(spec)
+
+        from osda_scene.render import build_canvas, prepare_elements
+        out = Path(tmp) / "out"
+        elements = prepare_elements(spec, out / "_work")
+        svg = build_canvas(spec, elements).save(out / "t.svg")
+        build_swarm_html(svg, spec, elements, out / "s.html")
+        return (out / "s.html").read_text(encoding="utf-8")
+
+    def test_trail_and_presentation_only_applied(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            html = self._html(tmp, trail=5)
+            self.assertIn("const trailLen = 5;", html)
+            self.assertIn(".bar, .note { display: none; }", html)
+
+    def test_controls_visible_when_not_presentation_only(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            html = self._html(tmp, presentation_only=False)
+            self.assertNotIn(".bar, .note { display: none; }", html)
 
 
 if __name__ == "__main__":

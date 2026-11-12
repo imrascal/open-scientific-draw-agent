@@ -297,6 +297,10 @@ def render_scene(spec: dict[str, Any], outdir: str | Path, *,
                                           spec["canvas"]["height_mm"]),
                         min_font_pt=spec["journal"]["min_font_pt"],
                         min_stroke_pt=spec["journal"]["min_stroke_pt"])
+    journal_dpi = int(spec["journal"].get("dpi") or 0)
+    if journal_dpi and dpi < journal_dpi:
+        report["warnings"].append(
+            f"导出 DPI {dpi} 低于 journal.dpi 要求 {journal_dpi}，印刷可能不达标")
     checks: dict[str, Any] = {}
     if spec["output"].get("verify_text", True):
         expected = [_element_text(el) for el in elements if el["type"] == "text"]

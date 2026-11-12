@@ -29,6 +29,13 @@ class TestCanvas(unittest.TestCase):
         self.assertEqual(tspans[1].get("font-size"), "70%")
         self.assertIn("dy", tspans[1].attrib)
 
+    def test_text_runs_bold(self):
+        c = Canvas(40, 20)
+        c.text(5, 10, "", runs=[{"t": "Si"}, {"t": "2", "sub": True, "bold": True}])
+        tspans = list(c.layer[-1])
+        self.assertIsNone(tspans[0].get("font-weight"))
+        self.assertEqual(tspans[1].get("font-weight"), "bold")
+
     def test_font_size_converted_to_mm(self):
         c = Canvas(40, 20)
         c.text(1, 1, "A", size_pt=7)

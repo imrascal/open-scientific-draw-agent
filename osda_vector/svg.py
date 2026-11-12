@@ -35,8 +35,7 @@ class Canvas:
         self.root.set("viewBox", f"0 0 {width_mm:g} {height_mm:g}")
         self.root.set("version", "1.1")
 
-        defs = etree.SubElement(self.root, f"{{{SVG_NS}}}defs")
-        # 透明背景矩形，保证导出 PDF/PNG 时画布尺寸稳定
+        # 白色背景矩形：导出 PDF/PNG 时固定白底，避免透明底在不同阅读器里变黑
         etree.SubElement(self.root, f"{{{SVG_NS}}}rect", {
             "id": "page", "x": "0", "y": "0",
             "width": f"{width_mm:g}", "height": f"{height_mm:g}",
@@ -161,6 +160,8 @@ class Canvas:
             tsp.text = str(run.get("t", ""))
             if level:
                 tsp.set("font-size", "70%")
+            if run.get("bold"):
+                tsp.set("font-weight", "bold")
             if level != offset:
                 shift = (level - offset) * 0.32
                 tsp.set("dy", f"{shift:+.2f}em")

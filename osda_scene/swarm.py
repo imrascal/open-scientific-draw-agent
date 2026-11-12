@@ -48,6 +48,8 @@ def build_swarm_html(svg_path: str | Path, spec: dict[str, Any],
     cfg = spec["swarm"]
     duration = float(cfg["duration_s"])
     mode = cfg.get("mode", "spatial")
+    trail = max(0, min(60, int(cfg.get("trail", 20))))
+    presentation_only = bool(cfg.get("presentation_only", True))
     width = spec["canvas"]["width_mm"]
     height = spec["canvas"]["height_mm"]
     center = (width / 2, height / 2)
@@ -101,6 +103,8 @@ def build_swarm_html(svg_path: str | Path, spec: dict[str, Any],
 
     payload_lanes = [[el["id"] for el in lane] for lane in lanes]
     title = html.escape(spec.get("name", "figure"))
+    presentation_css = ("  .bar, .note { display: none; }\n"
+                        if presentation_only else "")
     doc = f"""<!DOCTYPE html>
 <html lang="zh">
 <head>
@@ -121,7 +125,7 @@ def build_swarm_html(svg_path: str | Path, spec: dict[str, Any],
   .overlay svg {{ width: 100%; height: 100%; display: block; }}
   [id^="el_"] {{ opacity: 0; }}
   .note {{ color: #666; font-size: 12px; margin-top: 8px; line-height: 1.6; }}
-</style>
+{presentation_css}</style>
 <noscript><style>[id^="el_"] {{ opacity: 1 !important; }}</style></noscript>
 </head>
 <body>
@@ -154,6 +158,7 @@ const labels = {json.dumps(labels, ensure_ascii=False)};
 const per = {per:.4f};
 const fadeDur = {fade_dur:.2f};
 const total = {total:.4f};
+const trailLen = {trail};
 const drawEnd = Math.max(...lanes.map(l => l.length)) * per;
 const count = {count};
 const overlay = document.getElementById("ov");
@@ -230,7 +235,7 @@ function setCursor(i, x, y) {{
   const last = tr[tr.length - 1];
   if (!last || Math.hypot(last[0] - x, last[1] - y) > 0.2) {{
     tr.push([x, y]);
-    if (tr.length > 8) tr.shift();   // 只保留很短的一段尾迹
+    while (tr.length > trailLen) tr.shift();   // trail=0 时不留尾迹
     const poly = document.getElementById("trail" + i);
     if (poly) poly.setAttribute("points", tr.map(p => p.join(",")).join(" "));
   }}

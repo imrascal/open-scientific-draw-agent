@@ -73,7 +73,7 @@ Schema 在 [`schema/scene.schema.json`](schema/scene.schema.json)（JSON Schema 
 
 示例：`heterostructure.json`（2D + progressive + swarm）、`panel_full.json`（2×2 混合）、`panel_grid.json`（纯数据图网格）、`asset_3d.json`（Blender 素材回填）。
 
-`swarm` 只是演示：把最终 SVG 包成一条时间轴，元素按 stroke-dashoffset 逐段画出，光标用 `getPointAtLength()` 沿轮廓移动，多个光标分头同时画各自负责的区域。它不参与出图，也不改变任何静态产物。
+`swarm` 只是演示：把最终 SVG 包成一条时间轴，元素按 stroke-dashoffset 逐段画出，光标用 `getPointAtLength()` 沿轮廓移动，多个光标分头同时画各自负责的区域。它不参与出图，也不改变任何静态产物。`swarm.trail` 控制尾迹长度（0 表示不留尾迹），`swarm.presentation_only`（默认 true）隐藏播放控制条和说明文字，只留动画本身。
 
 CLI 参数：`--renderer auto|server|local|mock`、`--formats svg,pdf,png,tiff`（`svg` 不走 Inkscape，没有它时用 `--formats svg` 只产矢量）、`--dpi`、`--color-mode RGB|CMYK`、`--no-progressive`、`--no-swarm`。
 
