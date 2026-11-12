@@ -19,6 +19,7 @@ from datetime import datetime
 from pathlib import Path
 
 from .config import Config, RenderConfig, ServerConfig, require_server_credentials
+from .meta import sync_meta_resolution
 from .naming import RENDER_PREFIX, expand_frames, parse_resolution
 
 
@@ -259,7 +260,9 @@ def render_server(cfg: Config, blend_path: str | Path, out_dir: str | Path,
         pngs = [n for n in files if n.endswith(".png")]
         if not pngs:
             raise RenderError("服务器未产出 PNG")
-        return local_out / pngs[0]
+        png = local_out / pngs[0]
+        sync_meta_resolution(local_out / "meta.json", png, resolution)
+        return png
     finally:
         if sftp is not None:
             try:
@@ -316,6 +319,7 @@ def render_local(cfg: Config, blend_path: str | Path, out_dir: str | Path,
         if not candidates:
             raise RenderError("本地渲染结束但找不到 PNG")
         target = candidates[0]
+    sync_meta_resolution(out / "meta.json", target, resolution)
     log("LOCAL", f"完成，耗时 {time.time() - t0:.1f}s")
     return target
 

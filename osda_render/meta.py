@@ -45,6 +45,40 @@ def write_meta(path: str | Path, meta: AssetMeta) -> Path:
     return p
 
 
+def sync_meta_resolution(meta_path: str | Path,
+                         png_path: str | Path | None = None,
+                         requested: tuple[int, int] | None = None) -> bool:
+    """把 meta.resolution 对齐到最终 PNG 的实际尺寸。
+
+    build 脚本里的分辨率只是构建时的默认值；CLI / Scene Spec 可以在渲染时覆盖它，
+    因此渲染完成后必须回写 meta，否则 summary 和下游会把 1600x1200 当成实际尺寸。
+    优先读 PNG 真实尺寸（Pillow），读不到时退回请求的分辨率。meta 缺失就跳过。
+    """
+    p = Path(meta_path)
+    if not p.is_file():
+        return False
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    if not isinstance(data, dict):
+        return False
+
+    size = requested
+    if png_path is not None:
+        try:
+            from PIL import Image
+            with Image.open(png_path) as img:
+                size = img.size
+        except Exception:
+            pass
+    if not size:
+        return False
+    data["resolution"] = [int(size[0]), int(size[1])]
+    p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    return True
+
+
 def load_meta(path: str | Path) -> AssetMeta:
     p = Path(path)
     if not p.is_file():
