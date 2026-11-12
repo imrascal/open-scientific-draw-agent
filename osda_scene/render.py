@@ -33,18 +33,31 @@ def _plot_svg(el: dict[str, Any], base: Path, workdir: Path) -> Path:
     import matplotlib.pyplot as plt
 
     csv_path = (base / el["csv"]).resolve() if not Path(el["csv"]).is_absolute() else Path(el["csv"])
-    xs: list[float] = []
-    ys: list[float] = []
     with open(csv_path, newline="", encoding="utf-8") as fh:
         reader = csv.DictReader(fh)
-        if not reader.fieldnames or el["x"] not in reader.fieldnames or el["y"] not in reader.fieldnames:
-            raise SpecError(f"data_plot {el['id']}: CSV 缺少列 {el['x']}/{el['y']}")
-        for row in reader:
-            try:
-                xs.append(float(row[el["x"]]))
-                ys.append(float(row[el["y"]]))
-            except (TypeError, ValueError):
-                continue
+        fieldnames = reader.fieldnames or []
+        rows = list(reader)
+    if el["x"] not in fieldnames:
+        raise SpecError(f"data_plot {el['id']}: CSV 缺少 x 列 {el['x']}")
+
+    series = el.get("series") or [{
+        "y": el.get("y"),
+        "kind": el.get("kind", "line"),
+        "color": el.get("color"),
+        "label": el.get("y"),
+    }]
+    for item in series:
+        if not item.get("y"):
+            raise SpecError(f"data_plot {el['id']}: series 缺少 y 列")
+        for key in ("y", "yerr", "xerr"):
+            if item.get(key) and item[key] not in fieldnames:
+                raise SpecError(f"data_plot {el['id']}: CSV 缺少列 {item[key]}")
+
+    def _num(value: Any) -> float | None:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
 
     width = float(el["w_mm"])
     height = float(el.get("h_mm", width * 0.62))
@@ -61,24 +74,72 @@ def _plot_svg(el: dict[str, Any], base: Path, workdir: Path) -> Path:
         "xtick.major.size": 2,
         "ytick.major.size": 2,
         "lines.linewidth": 0.9,
+        "legend.fontsize": 6.5,
         "svg.fonttype": "none",
     })
     fig, ax = plt.subplots(figsize=(width / 25.4, height / 25.4))
-    color = el.get("color", "#2867A0")
-    kind = el.get("kind", "line")
-    if kind == "scatter":
-        ax.scatter(xs, ys, s=6, color=color)
-    elif kind == "bar":
-        ax.bar(xs, ys, width=(max(xs) - min(xs)) / max(len(xs), 1) * 0.6 if len(xs) > 1 else 0.6,
-               color=color)
-    else:
-        ax.plot(xs, ys, color=color)
+    palette = ["#2867A0", "#C9A227", "#3C8D5A", "#B03A2E", "#7B5EA7", "#2A9D8F"]
+    multi = len(series) > 1
+
+    for index, item in enumerate(series):
+        xs: list[float] = []
+        ys: list[float] = []
+        yerr: list[float] = []
+        xerr: list[float] = []
+        for row in rows:
+            xv = _num(row.get(el["x"]))
+            yv = _num(row.get(item["y"]))
+            if xv is None or yv is None:
+                continue
+            ev = _num(row.get(item["yerr"])) if item.get("yerr") else None
+            xe = _num(row.get(item["xerr"])) if item.get("xerr") else None
+            if item.get("yerr") and ev is None:
+                continue
+            if item.get("xerr") and xe is None:
+                continue
+            xs.append(xv)
+            ys.append(yv)
+            if item.get("yerr"):
+                yerr.append(ev)
+            if item.get("xerr"):
+                xerr.append(xe)
+        if not xs:
+            continue
+
+        color = item.get("color") or palette[index % len(palette)]
+        kind = item.get("kind", "line")
+        label = item.get("label") or item["y"]
+        marker = "o" if kind == "scatter" else None
+        linestyle = "--" if item.get("dash") else "-"
+
+        if item.get("yerr") or item.get("xerr"):
+            ax.errorbar(xs, ys, yerr=yerr or None, xerr=xerr or None,
+                        fmt=marker or (linestyle if kind != "bar" else "none"),
+                        color=color, label=label, capsize=1.5, elinewidth=0.6,
+                        capthick=0.6, markersize=2.5, linewidth=0.9)
+        elif kind == "scatter":
+            ax.scatter(xs, ys, s=6, color=color, label=label)
+        elif kind == "bar":
+            span = (max(xs) - min(xs)) if len(xs) > 1 else 1.0
+            bar_w = span / max(len(xs) - 1, 1) * 0.8 / max(len(series), 1)
+            offset = (index - (len(series) - 1) / 2) * bar_w
+            ax.bar([x + offset for x in xs], ys, width=bar_w, color=color, label=label)
+        else:
+            ax.plot(xs, ys, color=color, label=label, linestyle=linestyle,
+                    marker=marker, markersize=2.5)
+
     if el.get("log_y"):
         ax.set_yscale("log")
     if el.get("xlabel"):
         ax.set_xlabel(el["xlabel"])
     if el.get("ylabel"):
         ax.set_ylabel(el["ylabel"])
+    if el.get("xlim"):
+        ax.set_xlim(*el["xlim"])
+    if el.get("ylim"):
+        ax.set_ylim(*el["ylim"])
+    if multi and el.get("legend", True):
+        ax.legend(frameon=False, loc=el.get("legend_loc", "best"))
     fig.subplots_adjust(left=0.18, right=0.97, bottom=0.2, top=0.95)
     out = workdir / "plots" / f"{el['id']}.svg"
     out.parent.mkdir(parents=True, exist_ok=True)

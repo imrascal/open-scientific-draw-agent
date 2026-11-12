@@ -68,12 +68,12 @@ Schema 在 [`schema/scene.schema.json`](schema/scene.schema.json)（JSON Schema 
 | 布局 | `free`（给坐标）或 `grid`（给 `cell: [row, col]`，自动算单元格） |
 | 后端 | `auto` 自动判断，也可显式 `inkscape` / `matplotlib` / `blender` / `composite` |
 | 外部面板 | `panel` 支持 SVG 直接嵌入、PDF/EPS 自动经 Inkscape 转 SVG（Origin 导出可用） |
-| 数据图 | `data_plot` 读 CSV，按最终物理尺寸出图，字号不随缩放失真 |
+| 数据图 | `data_plot` 读 CSV，按最终物理尺寸出图，字号不随缩放失真；支持 `series` 多序列（line/scatter/bar、虚线、配色）、`yerr`/`xerr` 误差棒、`legend`/`legend_loc`、`xlim`/`ylim`、`log_y` |
 | Progressive | 按 `layout.order` 逐元素出帧 + Pillow 合成 GIF |
 | Swarm | 构建回放：元素按轮廓逐段画出，光标贴着轮廓走，多光标同时绘制；短点状尾迹，切换元素/画完即清；结束后光标原地淡出 |
 | 合规 | 画布尺寸、字号、线宽、文本完整性、PNG DPI 元数据、PDF 字体嵌入（启发式） |
 
-示例：`heterostructure.json`（2D + progressive + swarm）、`panel_full.json`（2×2 混合）、`panel_grid.json`（纯数据图网格）、`asset_3d.json`（Blender 素材回填）。
+示例：`heterostructure.json`（2D + progressive + swarm）、`panel_full.json`（2×2 混合）、`panel_grid.json`（纯数据图网格）、`multi_series.json`（双序列 + 误差棒 + 对数轴）、`asset_3d.json`（Blender 素材回填）。
 
 `swarm` 只是演示：把最终 SVG 包成一条时间轴，元素按 stroke-dashoffset 逐段画出，光标用 `getPointAtLength()` 沿轮廓移动，多个光标分头同时画各自负责的区域。它不参与出图，也不改变任何静态产物。`swarm.trail` 控制尾迹长度（0 表示不留尾迹），`swarm.presentation_only`（默认 true）隐藏播放控制条和说明文字，只留动画本身。
 
@@ -168,7 +168,7 @@ python examples/fig_panel.py --asset3d outputs/fig_stack/../3d/render_0001.png -
 python -m unittest discover -s tests -v
 ```
 
-63 个离线测试，不需要 Blender、GPU 或网络；未安装 Inkscape 时，导出相关用例自动跳过。CI 在 Ubuntu（装 Inkscape，跑完整导出）和 Windows（跳过导出）上各跑一遍。
+82 个离线测试，不需要 Blender、GPU 或网络；未安装 Inkscape 时，导出相关用例自动跳过。CI 在 Ubuntu（装 Inkscape，跑完整导出）和 Windows（跳过导出）上各跑一遍。
 
 ## 已知限制
 

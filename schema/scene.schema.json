@@ -798,7 +798,6 @@
         "type",
         "csv",
         "x",
-        "y",
         "w_mm"
       ],
       "additionalProperties": false,
@@ -870,8 +869,89 @@
           },
           "minItems": 2,
           "maxItems": 2
+        },
+        "series": {
+          "type": "array",
+          "minItems": 1,
+          "description": "多序列；存在时忽略顶层 y/kind/color",
+          "items": {
+            "type": "object",
+            "required": [
+              "y"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "y": {
+                "type": "string",
+                "description": "y 列名"
+              },
+              "label": {
+                "type": "string",
+                "description": "图例文字"
+              },
+              "color": {
+                "type": "string"
+              },
+              "kind": {
+                "enum": [
+                  "line",
+                  "scatter",
+                  "bar"
+                ]
+              },
+              "yerr": {
+                "type": "string",
+                "description": "y 误差列名"
+              },
+              "xerr": {
+                "type": "string",
+                "description": "x 误差列名"
+              },
+              "dash": {
+                "type": "boolean",
+                "description": "虚线"
+              }
+            }
+          }
+        },
+        "legend": {
+          "type": "boolean",
+          "default": true,
+          "description": "多序列时是否显示图例"
+        },
+        "legend_loc": {
+          "type": "string",
+          "default": "best"
+        },
+        "xlim": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "ylim": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
         }
-      }
+      },
+      "oneOf": [
+        {
+          "required": [
+            "y"
+          ]
+        },
+        {
+          "required": [
+            "series"
+          ]
+        }
+      ]
     },
     "blender_asset": {
       "type": "object",

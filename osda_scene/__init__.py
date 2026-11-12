@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """OSDA Scene Spec：JSON 声明式绘图、布局、progressive、swarm。"""
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 from .progressive import run_progressive
 from .render import build_canvas, prepare_elements, render_scene

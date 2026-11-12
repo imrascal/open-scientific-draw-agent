@@ -37,6 +37,7 @@ which inkscape            # Scene Spec 默认要导出 PDF/PNG，没它就用 --
 1. 写 `scene.json`：`version: "1.0"` + `canvas` + `elements`；只写需要的字段，其余有默认值。
 2. 选布局：`free`（每个元素给 `x_mm/y_mm`）或 `grid`（给 `cell: [row, col]`）。
    图元不够用时：`polygon`（给 `points_mm`）、`ellipse`、`rotation_deg` 可覆盖大部分几何；仍不够再把自写 SVG 片段放进 `raw_svg`（只允许静态、自包含内容）。
+   数据图用 `data_plot`：`x` + `y` 是单序列；多序列写 `series: [{y, label, color, kind, yerr, xerr, dash}]`，误差棒列直接给列名，图例默认多条序列时开启，可用 `legend_loc`、`xlim`/`ylim`、`log_y` 调整。
 3. 渲染：
 
 ```bash

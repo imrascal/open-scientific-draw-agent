@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "name": "multi_series",
+  "backend": "matplotlib",
+  "canvas": { "width_mm": 80, "height_mm": 58 },
+  "journal": { "font_family": "Arial", "min_font_pt": 7, "min_stroke_pt": 0.5, "dpi": 600 },
+  "layout": { "mode": "free" },
+  "progressive": { "enabled": false },
+  "swarm": { "enabled": false },
+  "output": { "formats": ["pdf", "png"], "dpi": 600, "color_mode": "RGB", "verify_text": true },
+  "elements": [
+    {
+      "id": "transfer", "type": "data_plot",
+      "csv": "../data/multi_series.csv", "x": "Vg",
+      "x_mm": 5, "y_mm": 5, "w_mm": 70, "h_mm": 46,
+      "log_y": true, "xlabel": "Vg (V)", "ylabel": "Id (A)",
+      "xlim": [-20, 20], "legend": true, "legend_loc": "lower right",
+      "series": [
+        { "y": "Id_fwd", "yerr": "err_fwd", "label": "forward", "color": "#2867A0" },
+        { "y": "Id_rev", "yerr": "err_rev", "label": "reverse", "color": "#C9A227", "dash": true }
+      ]
+    }
+  ]
+}
