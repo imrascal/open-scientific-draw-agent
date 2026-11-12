@@ -5,9 +5,9 @@
 
 > **English**: OSDA turns a declarative JSON scene into editable vector figures (SVG/PDF) and, when needed, 3D assets rendered by Blender. It targets publication-quality scientific figures: millimetre-accurate layout, journal checks, multi-panel composition, progressive GIF and a build replay. Vector export needs Inkscape; 3D is optional.
 
-![example panel](docs/preview.png?v=20261112b)
+![example panel](docs/preview.png?v=20261112c)
 
-![build replay](docs/preview.gif?v=20261112b)
+![build replay](docs/preview.gif?v=20261112c)
 
 三个子系统，职责分开：
 
@@ -159,6 +159,14 @@ python examples/fig_panel.py --asset3d outputs/fig_stack/../3d/render_0001.png -
 | 3 | 场景构建或渲染失败 |
 | 4 | 请求了审核但拿不到结果 |
 | 5 | `meta.json` 缺失/非法，或透明度声明与实际不符 |
+
+## 测试
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+63 个离线测试，不需要 Blender、GPU 或网络；未安装 Inkscape 时，导出相关用例自动跳过。CI 在 Ubuntu（装 Inkscape，跑完整导出）和 Windows（跳过导出）上各跑一遍。
 
 ## 已知限制
 
