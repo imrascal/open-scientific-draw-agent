@@ -162,5 +162,35 @@ class TestCompose(unittest.TestCase):
             self.assertNotIn("onclick=", out)
 
 
+class TestExampleGeometry(unittest.TestCase):
+    """示例器件必须让源漏电极与二维半导体层直接接触，不能只是贴近或留缝。"""
+
+    def test_electrodes_overlap_2d_layers(self):
+        from examples import fig_stack
+
+        canvas = fig_stack.build()
+        rects = {}
+        for el in canvas.layer.iter():
+            element_id = el.get("id")
+            if element_id in {"source", "drain", "mos2", "wse2"}:
+                rects[element_id] = tuple(
+                    float(el.get(key)) for key in ("x", "y", "width", "height")
+                )
+        self.assertEqual(set(rects), {"source", "drain", "mos2", "wse2"})
+
+        def overlaps(a, b):
+            ax, ay, aw, ah = a
+            bx, by, bw, bh = b
+            return (min(ax + aw, bx + bw) > max(ax, bx)
+                    and min(ay + ah, by + bh) > max(ay, by))
+
+        for electrode in ("source", "drain"):
+            for layer in ("wse2", "mos2"):
+                self.assertTrue(
+                    overlaps(rects[electrode], rects[layer]),
+                    f"{electrode} 必须与 {layer} 有实际重叠（直接接触）",
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

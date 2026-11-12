@@ -7,7 +7,7 @@
   "layout": {
     "mode": "free",
     "order": ["title", "subtitle", "si", "sio2", "hbn_bottom", "mos2", "wse2",
-              "hbn_top", "source", "drain", "vdw_arrow", "vdw_text",
+              "hbn_top", "source", "drain",
               "lead_top", "lead_wse2", "lead_mos2", "lead_hbn", "lead_sio2", "lead_si",
               "lbl_top", "lbl_wse2", "lbl_mos2", "lbl_hbn", "lbl_sio2", "lbl_si",
               "lbl_au_l", "lbl_au_r"]
@@ -29,15 +29,10 @@
       "fill": "#E8C547", "stroke": "#B8960F", "stroke_pt": 0.5 },
     { "id": "hbn_top", "type": "rect", "x_mm": 24, "y_mm": 26.5, "w_mm": 12, "h_mm": 2.5,
       "fill": "#C9D6E8", "stroke": "#333333", "stroke_pt": 0.5 },
-    { "id": "source", "type": "rect", "x_mm": 8, "y_mm": 31.5, "w_mm": 6, "h_mm": 5.5,
+    { "id": "source", "type": "rect", "x_mm": 8, "y_mm": 29, "w_mm": 14, "h_mm": 8,
       "fill": "#C9A227", "stroke": "#8A6D12", "stroke_pt": 0.5 },
-    { "id": "drain", "type": "rect", "x_mm": 49, "y_mm": 31.5, "w_mm": 6, "h_mm": 5.5,
+    { "id": "drain", "type": "rect", "x_mm": 38, "y_mm": 29, "w_mm": 14, "h_mm": 8,
       "fill": "#C9A227", "stroke": "#8A6D12", "stroke_pt": 0.5 },
-
-    { "id": "vdw_arrow", "type": "arrow", "x1_mm": 17, "y1_mm": 25.4, "x2_mm": 22.4, "y2_mm": 31.2,
-      "stroke": "#B03A2E", "stroke_pt": 0.6 },
-    { "id": "vdw_text", "type": "text", "x_mm": 14.5, "y_mm": 24.6,
-      "content": "vdW gap", "size_pt": 7, "fill": "#B03A2E" },
 
     { "id": "lead_top", "type": "line", "x1_mm": 56, "y1_mm": 27.75, "x2_mm": 62, "y2_mm": 26.5,
       "stroke": "#666666", "stroke_pt": 0.5 },
@@ -66,7 +61,7 @@
       "content": "Si substrate", "size_pt": 7 },
     { "id": "lbl_au_l", "type": "text", "x_mm": 9.4, "y_mm": 35.2,
       "content": "Au", "size_pt": 7, "fill": "#FFFFFF", "weight": "bold" },
-    { "id": "lbl_au_r", "type": "text", "x_mm": 50.4, "y_mm": 35.2,
+    { "id": "lbl_au_r", "type": "text", "x_mm": 47.0, "y_mm": 35.2,
       "content": "Au", "size_pt": 7, "fill": "#FFFFFF", "weight": "bold" },
 
     { "id": "title", "type": "text", "x_mm": 8, "y_mm": 10,
